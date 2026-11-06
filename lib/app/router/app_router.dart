@@ -8,6 +8,7 @@ import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/verify_email_screen.dart';
+import '../../features/events/presentation/screens/event_detail_screen.dart';
 import '../../features/events/presentation/screens/explore_screen.dart';
 import '../../features/events/presentation/screens/home_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -83,6 +84,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.verifyEmail,
         builder: (context, state) => const VerifyEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.eventDetail,
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return EventDetailScreen(slug: slug);
+        },
       ),
 
       // Main Navigation Shell (4 Tab Bawah)
