@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_radii.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../controllers/auth_notifier.dart';
 import '../controllers/auth_state.dart';
+import '../widgets/auth_field.dart';
+import '../widgets/auth_shell.dart';
 
+/// Layar Masuk.
+///
+/// Header gradasi cobalt + kartu formulir putih. Semua pesan galat dari Laravel
+/// (HTTP 422) ditempel ke field terkait lewat `firstErrorFor`, sedangkan galat
+/// umum tampil sebagai banner di atas formulir.
 class LoginScreen extends ConsumerStatefulWidget {
   final String? redirectUrl;
   final String? loginReason;
@@ -24,8 +34,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _loginController = TextEditingController(text: '41524010001');
-  final TextEditingController _passwordController = TextEditingController(text: 'Password123!');
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
 
@@ -68,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadii.borderLg,
             side: const BorderSide(color: AppColors.ink, width: 1.5),
           ),
           backgroundColor: AppColors.surface,
@@ -78,14 +88,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: AppColors.dangerLight,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadii.borderXs,
                 ),
-                child: const Icon(Icons.gavel_rounded, color: AppColors.danger, size: 20),
+                child: const Icon(
+                  Icons.gavel_rounded,
+                  color: AppColors.danger,
+                  size: 20,
+                ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                'Akun Ditangguhkan',
-                style: AppTypography.titleSmall.copyWith(color: AppColors.dangerText),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Akun Ditangguhkan',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: AppColors.dangerText,
+                  ),
+                ),
               ),
             ],
           ),
@@ -94,10 +112,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                reason ?? 'Akun Anda telah dinonaktifkan sementara oleh pihak kampus UMB.',
+                reason ??
+                    'Akun Anda telah dinonaktifkan sementara oleh pihak kampus UMB.',
                 style: AppTypography.bodyMedium.copyWith(color: AppColors.ink),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Silakan hubungi BAAK atau pengelola TemuKampus melalui surel support@mercubuana.ac.id untuk pengaktifan kembali.',
                 style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
@@ -118,283 +137,202 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  void _showResetHint() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Tautan reset sandi dapat diajukan ke admin/BAAK kampus.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+    final showLoginBanner =
+        widget.loginReason == 'register' || widget.redirectUrl != null;
+    final showGlobalError = authState.errorMessage != null &&
+        authState.status != AuthStatus.suspended &&
+        authState.validationErrors.isEmpty;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppColors.paper,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go(AppRoutes.home);
+      child: AuthShell(
+        eyebrow: 'MASUK AKUN',
+        headline: 'Selamat Datang di TemuKampus',
+        subtitle:
+            'Masuk untuk mendaftar acara, memantau verifikasi pembayaran, dan membuka tiket QR kamu.',
+        onBack: context.canPop()
+            ? () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go(AppRoutes.home);
+                }
               }
-            },
-          ),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Banner ajakan ramah jika dialihkan dari pendaftaran acara
-                  if (widget.loginReason == 'register' || widget.redirectUrl != null) ...[
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.cobaltLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.cobalt, width: 1.4),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: AppColors.ink,
-                            offset: Offset(2.5, 2.5),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.cobalt,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.login_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Perlu Masuk Akun',
-                                  style: AppTypography.titleSmall.copyWith(
-                                    color: AppColors.cobalt,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Silakan masuk terlebih dahulu untuk mendaftar acara ini.',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.ink700,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // Logo TemuKampus Stiker Motif
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.cobalt,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.ink, width: 1.5),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.ink,
-                          offset: Offset(3, 3),
-                          blurRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.confirmation_number_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  Text('Selamat Datang di TemuKampus', style: AppTypography.hero.copyWith(fontSize: 24)),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Masuk dengan akun UMB atau akun umum untuk menjelajahi kegiatan kampus.',
-                    style: AppTypography.bodyMedium,
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Pesan Galat Global (jika ada)
-                  if (authState.errorMessage != null &&
-                      authState.status != AuthStatus.suspended &&
-                      authState.validationErrors.isEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.dangerLight,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              authState.errorMessage!,
-                              style: AppTypography.bodySmall.copyWith(color: AppColors.dangerText),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Field NIM atau Email
-                  Text('NIM atau Alamat Email', style: AppTypography.label),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _loginController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    style: AppTypography.bodyLarge,
-                    decoration: InputDecoration(
-                      hintText: 'yoga@mercubuana.ac.id atau 41524010001',
-                      prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.ink500),
-                      errorText: authState.firstErrorFor('login'),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'NIM atau email wajib diisi.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Field Kata Sandi
-                  Text('Kata Sandi', style: AppTypography.label),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _handleLogin(),
-                    style: AppTypography.bodyLarge,
-                    decoration: InputDecoration(
-                      hintText: 'Minimal 8 karakter',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.ink500),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: AppColors.ink500,
-                          size: 20,
-                        ),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      errorText: authState.firstErrorFor('password'),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Kata sandi wajib diisi.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Ingat Saya & Lupa Kata Sandi
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Checkbox(
-                              value: _rememberMe,
-                              activeColor: AppColors.cobalt,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                              onChanged: (val) => setState(() => _rememberMe = val ?? true),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text('Ingat saya', style: AppTypography.bodySmall),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Tautan reset sandi dapat diajukan ke admin/BAAK kampus.'),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Lupa kata sandi?',
-                          style: AppTypography.labelSmall.copyWith(color: AppColors.cobalt),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Tombol Masuk
-                  StickerButton(
-                    label: 'Masuk Sekarang',
-                    variant: StickerButtonVariant.primary,
-                    isLoading: authState.isAuthenticating,
-                    onPressed: _handleLogin,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Divider "atau"
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'Belum punya akun?',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.ink400),
-                        ),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Tombol Buat Akun Baru (Outline)
-                  StickerButton(
-                    label: 'Daftar Akun Baru',
-                    variant: StickerButtonVariant.outline,
-                    onPressed: () => context.push(AppRoutes.register),
-                  ),
-                  const SizedBox(height: 32),
-                ],
+            : null,
+        footer: Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.xs,
+          children: [
+            Text(
+              'Belum punya akun?',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
+            ),
+            TextButton(
+              onPressed: () => context.push(AppRoutes.register),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Daftar Akun Baru',
+                style: AppTypography.labelSmall.copyWith(
+                  fontSize: 12,
+                  color: AppColors.cobalt,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
+          ],
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showLoginBanner) ...[
+                const AuthInfoBanner(
+                  title: 'Perlu Masuk Akun',
+                  message:
+                      'Silakan masuk terlebih dahulu untuk mendaftar acara ini.',
+                  icon: Icons.login_rounded,
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              if (showGlobalError) ...[
+                AuthErrorBanner(message: authState.errorMessage!),
+                const SizedBox(height: AppSpacing.md),
+              ],
+
+              AuthField(
+                label: 'NIM atau Alamat Email',
+                hint: 'yoga@mercubuana.ac.id atau 41524010001',
+                icon: Icons.person_outline_rounded,
+                controller: _loginController,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                serverError: authState.firstErrorFor('login'),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'NIM atau email wajib diisi.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              AuthField(
+                label: 'Kata Sandi',
+                hint: 'Minimal 8 karakter',
+                icon: Icons.lock_outline_rounded,
+                controller: _passwordController,
+                obscure: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _handleLogin(),
+                serverError: authState.firstErrorFor('password'),
+                suffix: IconButton(
+                  splashRadius: 18,
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.ink400,
+                    size: 19,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Kata sandi wajib diisi.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.xs),
+
+              Row(
+                children: [
+                  Flexible(
+                    child: AuthCheckbox(
+                      value: _rememberMe,
+                      onChanged: (val) => setState(() => _rememberMe = val),
+                      label: Text(
+                        'Ingat saya',
+                        style: AppTypography.bodySmall.copyWith(
+                          fontSize: 12,
+                          color: AppColors.ink700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _showResetHint,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Lupa kata sandi?',
+                      style: AppTypography.labelSmall.copyWith(
+                        fontSize: 11.5,
+                        color: AppColors.cobalt,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              StickerButton(
+                label: 'Masuk Sekarang',
+                variant: StickerButtonVariant.primary,
+                isLoading: authState.isAuthenticating,
+                borderRadius: AppRadii.sm,
+                onPressed: _handleLogin,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              const AuthOrDivider(),
+              const SizedBox(height: AppSpacing.md),
+
+              StickerButton(
+                label: 'Jelajahi sebagai Tamu',
+                variant: StickerButtonVariant.outline,
+                borderRadius: AppRadii.sm,
+                icon: const Icon(
+                  Icons.explore_outlined,
+                  size: 18,
+                  color: AppColors.ink,
+                ),
+                onPressed: () => context.go(AppRoutes.home),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
-

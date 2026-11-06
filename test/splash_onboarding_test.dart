@@ -9,6 +9,7 @@ import 'package:temukampus_mobile/core/utils/formatters.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/splash_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/widgets/splash_scene.dart';
+import 'package:temukampus_mobile/app/theme/components/ticket_clipper.dart';
 
 import 'auth_notifier_test.dart';
 
@@ -99,6 +100,24 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 1200));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('scene tepat di tengah layar pada lebar 390 & 645',
+        (tester) async {
+      for (final width in [390.0, 645.0]) {
+        await _pumpApp(tester, size: Size(width, 844));
+        await tester.pump(const Duration(milliseconds: 1200));
+
+        final rect = tester.getRect(find.byType(TicketContainer).first);
+        expect(
+          rect.center.dx,
+          closeTo(width / 2, 1.0),
+          reason: 'scene harus center di lebar $width, bukan menempel kiri',
+        );
+
+        await tester.pump(const Duration(milliseconds: 2600));
+        await tester.pumpAndSettle();
+      }
     });
 
     testWidgets('tiket memakai proyeksi perspektif (bukan scale 2D)',

@@ -10,24 +10,34 @@ import '../../../../app/theme/components/ticket_clipper.dart';
 
 /// Scene tiket 3D untuk splash.
 ///
-/// Semua gerakan diturunkan dari satu [progress] (0→1) sehingga timeline-nya
-/// deterministik dan berhenti sendiri (tidak ada `repeat()`):
+/// Seluruh gerakan diturunkan dari satu [progress] (0→1) sehingga deterministik
+/// dan berhenti sendiri (tanpa `repeat()`).
 ///
 /// | rentang | gerakan |
 /// |---------|---------|
-/// | 0.00–0.12 | kamera dolly-in (scale 1.16 → 1.0) + fade masuk |
-/// | 0.00–0.34 | kartu tiket berputar 3D (rotateY −1.15 → 0) |
-/// | 0.22–0.40 | kartu mendarat: squash & stretch |
-/// | 0.18–0.46 | bentuk latar melayang masuk dari tepi |
-/// | 0.34–0.60 | chip mengorbit masuk (elasticOut, bertahap) |
-/// | 0.30–0.62 | ledakan sparkle |
-/// | 0.40–0.86 | idle float (bob sinus) + bayangan tanah berdenyut |
-/// | 0.86–1.00 | exit: zoom-through (scale → 1.45) + fade |
+/// | 0.00–0.12 | kamera dolly-in (1.14 → 1.0) |
+/// | 0.02–0.34 | kartu berputar 3D (rotateY −1.05 → 0) |
+/// | 0.24–0.44 | kartu mendarat (squash & stretch) |
+/// | 0.16–0.42 | bentuk latar melayang masuk |
+/// | 0.34–0.58 | chip muncul berurutan (elasticOut) |
+/// | 0.30–0.56 | ledakan sparkle |
+/// | 0.44–0.90 | idle float + bayangan tanah berdenyut |
+///
+/// Tata letak memakai kotak tetap [boxWidth]×[boxHeight] dengan posisi eksplisit
+/// supaya komposisinya sama di layar sempit maupun lebar (tidak melayang-layang
+/// mengikuti Alignment).
 class SplashTicketScene extends StatelessWidget {
   final Animation<double> progress;
 
-  static const double cardWidth = 214;
+  /// Kotak scene. Kartu 210×136 selalu di tengah horizontal.
+  static const double boxWidth = 380;
+  static const double boxHeight = 296;
+
+  static const double cardWidth = 210;
   static const double cardHeight = 136;
+
+  /// Jarak kartu dari tepi atas kotak (menyisakan ruang untuk chip).
+  static const double cardTop = 62;
 
   const SplashTicketScene({super.key, required this.progress});
 
@@ -41,51 +51,63 @@ class SplashTicketScene extends StatelessWidget {
       builder: (context, _) {
         final t = progress.value;
 
-        // Kamera: masuk dari jauh, keluar menembus layar.
-        final dolly = 1.16 - 0.16 * Curves.easeOutCubic.transform(_seg(t, 0.0, 0.12));
-        final exitZoom = 1 + 0.45 * Curves.easeInCubic.transform(_seg(t, 0.86, 1.0));
-        final sceneOpacity =
-            Curves.easeOut.transform(_seg(t, 0.0, 0.10)) * (1 - _seg(t, 0.9, 1.0));
+        // Kamera: masuk dari jauh. Exit ditangani pembungkus (lihat SplashScreen).
+        final dolly =
+            1.14 - 0.14 * Curves.easeOutCubic.transform(_seg(t, 0.0, 0.12));
 
         // Rotasi 3D kartu
-        final flip = Curves.easeOutCubic.transform(_seg(t, 0.0, 0.34));
-        final rotateY = -1.15 * (1 - flip);
-        final rotateX = 0.20 * (1 - flip) + 0.05;
+        final flip = Curves.easeOutCubic.transform(_seg(t, 0.02, 0.34));
+        final rotateY = -1.05 * (1 - flip);
+        final rotateX = 0.18 * (1 - flip) + 0.04;
 
         // Squash & stretch saat mendarat
-        final land = _seg(t, 0.22, 0.40);
-        final squash = math.sin(land * math.pi) * 0.10;
+        final squash = math.sin(_seg(t, 0.24, 0.44) * math.pi) * 0.09;
 
-        // Idle float
-        final floatT = _seg(t, 0.40, 0.86);
-        final bob = math.sin(floatT * math.pi * 2) * 6;
+        // Idle float: 1,5 siklus lembut setelah mendarat.
+        final floatT = _seg(t, 0.44, 0.90);
+        final bob = math.sin(floatT * math.pi * 3) * 5;
+        final shadowScale = 1 - (bob.abs() / 5) * 0.22;
 
         final matrix = Matrix4.identity()
-          ..setEntry(3, 2, 0.0014)
+          ..setEntry(3, 2, 0.0012)
           ..rotateY(rotateY)
           ..rotateX(rotateX);
 
-        return Opacity(
-          opacity: sceneOpacity.clamp(0.0, 1.0),
-          child: Transform.scale(
-            scale: dolly * exitZoom,
-            child: SizedBox(
-              width: 340,
-              height: 340,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Bentuk latar (kedalaman)
-                  _DepthShapes(t: t, seg: _seg),
+        return Transform.scale(
+          scale: dolly,
+          child: SizedBox(
+            width: boxWidth,
+            height: boxHeight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Spotlight lembut: memberi "lantai" pada kartu.
+                Positioned(
+                  left: (boxWidth - 300) / 2,
+                  top: 26,
+                  child: _StageSpotlight(progress: _seg(t, 0.0, 0.30)),
+                ),
 
-                  // Bayangan tanah: makin dekat kartu, makin besar & gelap
-                  Positioned(
-                    bottom: 74 - bob * 0.6,
-                    child: _GroundShadow(strength: 1 - (bob.abs() / 12).clamp(0, 0.6)),
+                // Bentuk latar
+                _DepthShapes(t: t, seg: _seg),
+
+                // Bayangan tanah
+                Positioned(
+                  left: (boxWidth - 150) / 2,
+                  top: cardTop + cardHeight - 8 - bob * 0.5,
+                  child: Transform.scale(
+                    scaleX: shadowScale,
+                    child: _GroundShadow(
+                      strength: 1 - (bob.abs() / 5) * 0.5,
+                    ),
                   ),
+                ),
 
-                  // Kartu tiket
-                  Transform.translate(
+                // Kartu tiket
+                Positioned(
+                  left: (boxWidth - cardWidth) / 2,
+                  top: cardTop,
+                  child: Transform.translate(
                     offset: Offset(0, bob),
                     child: Transform(
                       transform: matrix,
@@ -97,48 +119,62 @@ class SplashTicketScene extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
 
-                  // Ledakan sparkle
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _SparkBurstPainter(
-                          progress: Curves.easeOutCubic.transform(_seg(t, 0.30, 0.66)),
+                // Ledakan sparkle (di belakang chip, di atas kartu)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _SparkBurstPainter(
+                        progress: Curves.easeOutCubic
+                            .transform(_seg(t, 0.30, 0.62)),
+                        origin: Offset(
+                          boxWidth / 2,
+                          cardTop + cardHeight / 2,
                         ),
                       ),
                     ),
                   ),
+                ),
 
-                  // Chip mengorbit
-                  _OrbitChip(
+                // Chip mengorbit — posisi eksplisit, tidak menabrak kartu.
+                Positioned(
+                  left: 8,
+                  top: 16,
+                  child: _OrbitChip(
                     label: 'Seminar',
                     icon: Icons.campaign_rounded,
                     background: AppColors.cobalt,
                     foreground: Colors.white,
-                    alignment: const Alignment(-1.02, -0.92),
                     appear: Curves.elasticOut.transform(_seg(t, 0.34, 0.56)),
-                    drift: math.sin(floatT * math.pi * 2) * 3,
+                    drift: math.sin(floatT * math.pi * 3) * 2.5,
                   ),
-                  _OrbitChip(
+                ),
+                Positioned(
+                  right: 8,
+                  top: 16,
+                  child: _OrbitChip(
                     label: '4 SKP',
                     icon: Icons.school_rounded,
                     background: AppColors.signalLight,
                     foreground: AppColors.ink,
-                    alignment: const Alignment(1.06, -0.36),
                     appear: Curves.elasticOut.transform(_seg(t, 0.40, 0.62)),
-                    drift: math.sin(floatT * math.pi * 2 + 1.2) * 3,
+                    drift: math.sin(floatT * math.pi * 3 + 1.4) * 2.5,
                   ),
-                  _OrbitChip(
+                ),
+                Positioned(
+                  left: 30,
+                  bottom: 14,
+                  child: _OrbitChip(
                     label: 'Gratis',
                     icon: Icons.local_activity_rounded,
                     background: AppColors.mintLight,
                     foreground: AppColors.mintText,
-                    alignment: const Alignment(-0.86, 0.72),
                     appear: Curves.elasticOut.transform(_seg(t, 0.46, 0.68)),
-                    drift: math.sin(floatT * math.pi * 2 + 2.4) * 3,
+                    drift: math.sin(floatT * math.pi * 3 + 2.8) * 2.5,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -147,8 +183,37 @@ class SplashTicketScene extends StatelessWidget {
   }
 }
 
+/// Cahaya lembut di belakang kartu supaya tidak terlihat melayang di ruang kosong.
+class _StageSpotlight extends StatelessWidget {
+  final double progress;
+
+  const _StageSpotlight({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: progress.clamp(0.0, 1.0),
+      child: Container(
+        width: 300,
+        height: 300,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              AppColors.cobalt.withValues(alpha: 0.10),
+              AppColors.cobalt.withValues(alpha: 0.03),
+              AppColors.cobalt.withValues(alpha: 0.0),
+            ],
+            stops: const [0.0, 0.55, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Kartu tiket mini (kartun 3D: border tegas + hard shadow)
+// Kartu tiket mini
 // ---------------------------------------------------------------------------
 class _MiniTicket extends StatelessWidget {
   const _MiniTicket();
@@ -173,8 +238,8 @@ class _MiniTicket extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
@@ -186,7 +251,7 @@ class _MiniTicket extends StatelessWidget {
                   child: const Icon(
                     Icons.rocket_launch_rounded,
                     color: Colors.white,
-                    size: 22,
+                    size: 21,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -207,7 +272,7 @@ class _MiniTicket extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       _bar(width: null, height: 8),
                       const SizedBox(height: AppSpacing.xxs),
-                      _bar(width: 84, height: 8),
+                      _bar(width: 80, height: 8),
                     ],
                   ),
                 ),
@@ -300,7 +365,9 @@ class _MiniQrPainter extends CustomPainter {
     final paint = Paint()..color = AppColors.ink;
     for (var y = 0; y < _modules; y++) {
       for (var x = 0; x < _modules; x++) {
-        final finder = (x < 3 && y < 3) || (x > _modules - 4 && y < 3) || (x < 3 && y > _modules - 4);
+        final finder = (x < 3 && y < 3) ||
+            (x > _modules - 4 && y < 3) ||
+            (x < 3 && y > _modules - 4);
         if (finder) continue;
         if ((x * 5 + y * 7 + x * y) % 3 == 0) {
           canvas.drawRect(Rect.fromLTWH(x * cell, y * cell, cell, cell), paint);
@@ -312,7 +379,10 @@ class _MiniQrPainter extends CustomPainter {
       Offset(cell * (_modules - 3), 0),
       Offset(0, cell * (_modules - 3)),
     ]) {
-      canvas.drawRect(Rect.fromLTWH(offset.dx, offset.dy, cell * 3, cell * 3), paint);
+      canvas.drawRect(
+        Rect.fromLTWH(offset.dx, offset.dy, cell * 3, cell * 3),
+        paint,
+      );
       canvas.drawRect(
         Rect.fromLTWH(offset.dx + cell, offset.dy + cell, cell, cell),
         Paint()..color = Colors.white,
@@ -332,7 +402,6 @@ class _OrbitChip extends StatelessWidget {
   final IconData icon;
   final Color background;
   final Color foreground;
-  final Alignment alignment;
   final double appear;
   final double drift;
 
@@ -341,49 +410,49 @@ class _OrbitChip extends StatelessWidget {
     required this.icon,
     required this.background,
     required this.foreground,
-    required this.alignment,
     required this.appear,
     required this.drift,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: Transform.translate(
-        offset: Offset(0, drift),
-        child: Transform.scale(
-          scale: appear.clamp(0.0, 1.6),
-          child: Opacity(
-            opacity: appear.clamp(0.0, 1.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: 5,
-              ),
-              decoration: BoxDecoration(
-                color: background,
-                borderRadius: AppRadii.borderPill,
-                border: Border.all(color: AppColors.ink, width: 1.4),
-                boxShadow: const [
-                  BoxShadow(color: AppColors.ink, offset: Offset(2, 2), blurRadius: 0),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 12, color: foreground),
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: AppTypography.micro.copyWith(
-                      fontSize: 9.5,
-                      color: foreground,
-                      fontWeight: FontWeight.w800,
-                    ),
+    return Transform.translate(
+      offset: Offset(0, drift),
+      child: Transform.scale(
+        scale: appear.clamp(0.0, 1.2),
+        child: Opacity(
+          opacity: appear.clamp(0.0, 1.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 5,
+            ),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: AppRadii.borderPill,
+              border: Border.all(color: AppColors.ink, width: 1.4),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.ink,
+                  offset: Offset(2, 2),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 12, color: foreground),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: AppTypography.micro.copyWith(
+                    fontSize: 9.5,
+                    color: foreground,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -400,15 +469,15 @@ class _GroundShadow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 148,
-      height: 18,
+      width: 150,
+      height: 16,
       decoration: BoxDecoration(
         borderRadius: AppRadii.borderPill,
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.22 * strength.clamp(0.2, 1)),
-            blurRadius: 16,
-            spreadRadius: 2,
+            color: AppColors.ink.withValues(alpha: 0.20 * strength.clamp(0.3, 1)),
+            blurRadius: 14,
+            spreadRadius: 3,
           ),
         ],
       ),
@@ -424,62 +493,68 @@ class _DepthShapes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final a = Curves.easeOutCubic.transform(seg(t, 0.18, 0.46));
-    final b = Curves.easeOutCubic.transform(seg(t, 0.24, 0.52));
-    final c = Curves.easeOutCubic.transform(seg(t, 0.30, 0.58));
+    final a = Curves.easeOutCubic.transform(seg(t, 0.16, 0.42));
+    final b = Curves.easeOutCubic.transform(seg(t, 0.22, 0.48));
+    final c = Curves.easeOutCubic.transform(seg(t, 0.28, 0.54));
 
     return IgnorePointer(
       child: Stack(
         children: [
           Positioned(
-            top: 24 + (1 - a) * -40,
-            left: 18 + (1 - a) * -30,
+            top: 34 + (1 - a) * -26,
+            left: 24 + (1 - a) * -24,
             child: Opacity(
-              opacity: a,
+              opacity: a * 0.9,
               child: Transform.rotate(
                 angle: 0.4,
                 child: Container(
-                  width: 62,
-                  height: 62,
+                  width: 54,
+                  height: 54,
                   decoration: BoxDecoration(
                     color: AppColors.cobaltLight,
                     borderRadius: AppRadii.borderLg,
-                    border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.25)),
+                    border: Border.all(
+                      color: AppColors.cobalt.withValues(alpha: 0.22),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
           Positioned(
-            bottom: 34 + (1 - b) * 40,
-            right: 14 + (1 - b) * 30,
+            bottom: 30 + (1 - b) * 26,
+            right: 22 + (1 - b) * 24,
             child: Opacity(
-              opacity: b,
+              opacity: b * 0.9,
               child: Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: AppColors.signalLight,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.signal.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppColors.signal.withValues(alpha: 0.28),
+                  ),
                 ),
               ),
             ),
           ),
           Positioned(
-            top: 44,
-            right: 34,
+            top: 96,
+            right: 40,
             child: Opacity(
-              opacity: c * 0.9,
+              opacity: c * 0.85,
               child: Transform.rotate(
                 angle: -0.5,
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
                     color: AppColors.mintLight,
                     borderRadius: AppRadii.borderXs,
-                    border: Border.all(color: AppColors.mint.withValues(alpha: 0.35)),
+                    border: Border.all(
+                      color: AppColors.mint.withValues(alpha: 0.32),
+                    ),
                   ),
                 ),
               ),
@@ -491,15 +566,16 @@ class _DepthShapes extends StatelessWidget {
   }
 }
 
-/// Ledakan sparkle: 14 percikan menyebar dari pusat lalu memudar.
+/// Ledakan sparkle: 14 percikan menyebar dari [origin] lalu memudar.
 class _SparkBurstPainter extends CustomPainter {
   final double progress;
+  final Offset origin;
 
-  _SparkBurstPainter({required this.progress});
+  _SparkBurstPainter({required this.progress, required this.origin});
 
   static final List<_Spark> _sparks = List.generate(14, (i) {
     final angle = (i / 14) * math.pi * 2 + (i.isEven ? 0.22 : -0.18);
-    final distance = 70 + (i % 4) * 16.0;
+    final distance = 76 + (i % 4) * 14.0;
     final size = 2.0 + (i % 3);
     return _Spark(angle: angle, distance: distance, size: size);
   });
@@ -507,13 +583,15 @@ class _SparkBurstPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (progress <= 0 || progress >= 1) return;
-    final center = Offset(size.width / 2, size.height / 2 - 6);
     final fade = (1 - progress).clamp(0.0, 1.0);
 
     for (final spark in _sparks) {
       final distance = spark.distance * Curves.easeOut.transform(progress);
-      final position = center +
-          Offset(math.cos(spark.angle) * distance, math.sin(spark.angle) * distance);
+      final position = origin +
+          Offset(
+            math.cos(spark.angle) * distance,
+            math.sin(spark.angle) * distance * 0.72,
+          );
       final paint = Paint()
         ..color = (spark.size > 3 ? AppColors.signal : AppColors.cobalt)
             .withValues(alpha: 0.85 * fade);
@@ -523,7 +601,7 @@ class _SparkBurstPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SparkBurstPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress || oldDelegate.origin != origin;
 }
 
 class _Spark {
@@ -531,5 +609,9 @@ class _Spark {
   final double distance;
   final double size;
 
-  const _Spark({required this.angle, required this.distance, required this.size});
+  const _Spark({
+    required this.angle,
+    required this.distance,
+    required this.size,
+  });
 }

@@ -49,8 +49,9 @@ CustomTransitionPage<void> _buildSlideTransition({
   );
 }
 
-/// Transisi "bloom": fade + skala halus. Dipakai untuk rute pertama setelah
-/// splash (onboarding/login) agar perpindahan terasa menyatu, bukan menggeser.
+/// Transisi "bloom": fade + skala halus dengan veil putih. Dipakai untuk rute
+/// pertama setelah splash (onboarding/login) agar perpindahan terasa menyatu
+/// dengan flash putih di akhir splash — bukan menggeser halaman.
 CustomTransitionPage<void> _buildFadeScaleTransition({
   required GoRouterState state,
   required Widget child,
@@ -58,7 +59,7 @@ CustomTransitionPage<void> _buildFadeScaleTransition({
   return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 420),
+    transitionDuration: const Duration(milliseconds: 520),
     reverseTransitionDuration: const Duration(milliseconds: 240),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
@@ -66,11 +67,32 @@ CustomTransitionPage<void> _buildFadeScaleTransition({
         curve: Curves.easeOutCubic,
         reverseCurve: Curves.easeInCubic,
       );
-      return FadeTransition(
-        opacity: curved,
-        child: ScaleTransition(
-          scale: Tween<double>(begin: 0.97, end: 1).animate(curved),
-          child: child,
+      final veil = CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+        reverseCurve: Curves.easeIn,
+      );
+      return AnimatedBuilder(
+        animation: veil,
+        builder: (context, inner) => Stack(
+          children: [
+            inner!,
+            // Veil putih menyusut: layar baru "muncul" dari putih.
+            IgnorePointer(
+              child: Container(
+                color: Colors.white.withValues(
+                  alpha: (1 - veil.value).clamp(0.0, 1.0) * 0.95,
+                ),
+              ),
+            ),
+          ],
+        ),
+        child: FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.985, end: 1).animate(curved),
+            child: child,
+          ),
         ),
       );
     },
@@ -104,12 +126,15 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 3. User belum terotentikasi (Guest Mode vs Protected Routes)
       if (authState.status == AuthStatus.unauthenticated || authState.status == AuthStatus.suspended) {
-        // Rute yang membutuhkan login wajib sebelum masuk
-        final isRegistrationRoute = location.endsWith('/register');
+        // Rute registrasi ACARA wajib login. Catatan: '/register' milik layar
+        // Daftar Akun bukan termasuk — kalau ikut dicocokkan, tamu tidak akan
+        // pernah bisa membuka halaman pendaftaran akun.
+        final isEventRegistrationRoute =
+            location.endsWith('/register') && !isRegister;
         final isTicketDetailRoute = location.startsWith('/tickets/');
         final isScannerRoute = location.startsWith('/scanner');
 
-        if (isRegistrationRoute) {
+        if (isEventRegistrationRoute) {
           final encodedRedirect = Uri.encodeComponent(location);
           return '${AppRoutes.login}?redirect=$encodedRedirect&reason=register';
         }

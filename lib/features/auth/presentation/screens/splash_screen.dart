@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,13 +16,21 @@ import '../widgets/splash_scene.dart';
 
 /// Splash sinematik TemuKampus.
 ///
-/// Satu controller 2400ms menggerakkan seluruh timeline (lihat
-/// [SplashTicketScene] untuk tabel fase). Navigasi dipicu tepat saat controller
-/// selesai supaya tidak ada frame "diam" di antara splash dan layar berikutnya.
+/// Satu controller 3,6 detik menggerakkan seluruh timeline (lihat
+/// [SplashTicketScene] untuk tabel fase scene). Navigasi dipicu tepat saat
+/// controller selesai supaya tidak ada frame "diam" di antara splash dan layar
+/// berikutnya.
+///
+/// Transisi masuk dan keluar memakai *veil* putih yang saling menyambung dengan
+/// transisi rute (fade-through-white), sehingga splash → onboarding/login
+/// terasa sebagai satu gerakan.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
-  static const Duration totalDuration = Duration(milliseconds: 2400);
+  static const Duration totalDuration = Duration(milliseconds: 3600);
+
+  /// Porsi timeline untuk keluar (zoom-back + veil).
+  static const double exitStart = 0.90;
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
@@ -36,8 +46,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _wordScale;
   late final Animation<double> _dotPulse;
   late final Animation<double> _progress;
-  late final Animation<double> _flash;
-  late final Animation<double> _chromeFade;
 
   @override
   void initState() {
@@ -51,21 +59,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     Animation<double> at(double begin, double end, Curve curve) =>
         CurvedAnimation(parent: _controller, curve: Interval(begin, end, curve: curve));
 
-    _glow = at(0.0, 0.6, Curves.easeOutCubic);
-    _wordOpacity = at(0.46, 0.70, Curves.easeOut);
-    _wordOffset = Tween<double>(begin: 22, end: 0).animate(
-      at(0.46, 0.72, Curves.easeOutCubic),
+    _glow = at(0.0, 0.5, Curves.easeOutCubic);
+    _wordOpacity = at(0.50, 0.70, Curves.easeOut);
+    _wordOffset = Tween<double>(begin: 18, end: 0).animate(
+      at(0.50, 0.72, Curves.easeOutCubic),
     );
-    _wordScale = Tween<double>(begin: 0.92, end: 1).animate(
-      at(0.46, 0.78, Curves.elasticOut),
+    _wordScale = Tween<double>(begin: 0.94, end: 1).animate(
+      at(0.50, 0.78, Curves.elasticOut),
     );
     _dotPulse = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.8), weight: 40),
-      TweenSequenceItem(tween: Tween(begin: 1.8, end: 1.0), weight: 60),
-    ]).animate(at(0.58, 0.84, Curves.easeInOut));
-    _progress = at(0.02, 0.92, Curves.easeInOutCubic);
-    _flash = at(0.9, 1.0, Curves.easeIn);
-    _chromeFade = at(0.88, 0.98, Curves.easeIn);
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.7), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.7, end: 1.0), weight: 60),
+    ]).animate(at(0.60, 0.84, Curves.easeInOut));
+    _progress = at(0.03, 0.88, Curves.easeInOutCubic);
 
     _controller.forward();
     _initializeAuth();
@@ -105,143 +111,71 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       backgroundColor: AppColors.paper,
       body: Stack(
         children: [
-          // Latar: gradasi vertikal + dua glow radial
           const _SplashBackground(),
-          AnimatedBuilder(
-            animation: _glow,
-            builder: (context, _) {
-              final t = _glow.value;
-              return IgnorePointer(
-                child: Stack(
+          _GlowLayer(animation: _glow),
+
+          // Konten: Positioned.fill WAJIB supaya Column melebar penuh dan
+          // scene benar-benar berada di tengah layar (bukan menempel kiri).
+          Positioned.fill(
+            child: SafeArea(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  final t = _controller.value;
+                  final exit = Curves.easeInCubic.transform(
+                    ((t - SplashScreen.exitStart) / (1 - SplashScreen.exitStart))
+                        .clamp(0.0, 1.0),
+                  );
+                  return Opacity(
+                    opacity: 1 - exit,
+                    child: Transform.scale(
+                      scale: 1 - 0.06 * exit,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Positioned(
-                      top: -120 - t * 24,
-                      left: -110,
-                      child: _Glow(
-                        size: 330,
-                        color: AppColors.cobalt.withValues(alpha: 0.13 * t),
-                      ),
+                    SplashTicketScene(progress: _controller),
+                    const SizedBox(height: AppSpacing.lg),
+                    _Wordmark(
+                      controller: _controller,
+                      opacity: _wordOpacity,
+                      offset: _wordOffset,
+                      scale: _wordScale,
+                      dotPulse: _dotPulse,
                     ),
-                    Positioned(
-                      bottom: -110 - t * 30,
-                      right: -120,
-                      child: _Glow(
-                        size: 300,
-                        color: AppColors.signal.withValues(alpha: 0.14 * t),
-                      ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    _ProgressBlock(
+                      controller: _controller,
+                      progress: _progress,
                     ),
+                    const SizedBox(height: AppSpacing.xl),
                   ],
+                ),
+              ),
+            ),
+          ),
+
+          // Veil putih: menyambung masuk (fade-out) & keluar (fade-in).
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final t = _controller.value;
+              final entry = 1 - Curves.easeOut.transform((t / 0.10).clamp(0.0, 1.0));
+              final exit = Curves.easeInCubic.transform(
+                ((t - SplashScreen.exitStart) / (1 - SplashScreen.exitStart))
+                    .clamp(0.0, 1.0),
+              );
+              final alpha = math.max(entry * 0.9, exit);
+              if (alpha <= 0.001) return const SizedBox.shrink();
+              return IgnorePointer(
+                child: Container(
+                  color: Colors.white.withValues(alpha: alpha.clamp(0.0, 1.0)),
                 ),
               );
             },
-          ),
-
-          SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 3),
-                SplashTicketScene(progress: _controller),
-                const SizedBox(height: AppSpacing.xs),
-
-                // Wordmark
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Opacity(
-                      opacity: (_wordOpacity.value * (1 - _chromeFade.value))
-                          .clamp(0.0, 1.0),
-                      child: Transform.translate(
-                        offset: Offset(0, _wordOffset.value),
-                        child: Transform.scale(
-                          scale: _wordScale.value,
-                          child: child,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'TEMUKAMPUS',
-                            style: AppTypography.hero.copyWith(
-                              fontSize: 27,
-                              letterSpacing: -0.6,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.xs),
-                          AnimatedBuilder(
-                            animation: _dotPulse,
-                            builder: (context, _) => Transform.scale(
-                              scale: _dotPulse.value,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.only(bottom: 7),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.signal,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Universitas Mercu Buana',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.ink500,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(flex: 2),
-
-                // Progress bar + caption
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) {
-                    return Opacity(
-                      opacity: (1 - _chromeFade.value).clamp(0.0, 1.0),
-                      child: Column(
-                        children: [
-                          _ProgressBar(progress: _progress.value),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'Menyiapkan pengalaman kampusmu…',
-                            style: AppTypography.micro.copyWith(
-                              fontSize: 9.5,
-                              color: AppColors.ink400,
-                              letterSpacing: 0.4,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
-            ),
-          ),
-
-          // Flash putih di akhir: menyambung mulus ke layar berikutnya.
-          AnimatedBuilder(
-            animation: _flash,
-            builder: (context, _) => IgnorePointer(
-              child: Container(
-                color: Colors.white.withValues(alpha: _flash.value * 0.92),
-              ),
-            ),
           ),
         ],
       ),
@@ -259,11 +193,49 @@ class _SplashBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.paper, Color(0xFFEEF2FF), AppColors.paper],
-          stops: [0.0, 0.55, 1.0],
+          colors: [AppColors.paper, Color(0xFFEDF1FE), AppColors.paper],
+          stops: [0.0, 0.5, 1.0],
         ),
       ),
       child: SizedBox.expand(),
+    );
+  }
+}
+
+class _GlowLayer extends StatelessWidget {
+  final Animation<double> animation;
+
+  const _GlowLayer({required this.animation});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final t = animation.value;
+        return IgnorePointer(
+          child: Stack(
+            children: [
+              Positioned(
+                top: -130 - t * 20,
+                left: -120,
+                child: _Glow(
+                  size: 340,
+                  color: AppColors.cobalt.withValues(alpha: 0.12 * t),
+                ),
+              ),
+              Positioned(
+                bottom: -120 - t * 24,
+                right: -130,
+                child: _Glow(
+                  size: 320,
+                  color: AppColors.signal.withValues(alpha: 0.13 * t),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -290,12 +262,113 @@ class _Glow extends StatelessWidget {
   }
 }
 
+class _Wordmark extends StatelessWidget {
+  final AnimationController controller;
+  final Animation<double> opacity;
+  final Animation<double> offset;
+  final Animation<double> scale;
+  final Animation<double> dotPulse;
+
+  const _Wordmark({
+    required this.controller,
+    required this.opacity,
+    required this.offset,
+    required this.scale,
+    required this.dotPulse,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) => Opacity(
+        opacity: opacity.value.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, offset.value),
+          child: Transform.scale(scale: scale.value, child: child),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'TEMUKAMPUS',
+                style: AppTypography.hero.copyWith(
+                  fontSize: 27,
+                  letterSpacing: -0.6,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              AnimatedBuilder(
+                animation: dotPulse,
+                builder: (context, _) => Transform.scale(
+                  scale: dotPulse.value,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(bottom: 7),
+                    decoration: const BoxDecoration(
+                      color: AppColors.signal,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Universitas Mercu Buana',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.ink500,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressBlock extends StatelessWidget {
+  final AnimationController controller;
+  final Animation<double> progress;
+
+  const _ProgressBlock({required this.controller, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) => Column(
+        children: [
+          _ProgressBar(progress: progress.value),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Menyiapkan pengalaman kampusmu…',
+            style: AppTypography.micro.copyWith(
+              fontSize: 9.5,
+              color: AppColors.ink400,
+              letterSpacing: 0.4,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProgressBar extends StatelessWidget {
   final double progress;
 
   const _ProgressBar({required this.progress});
 
-  static const double width = 172;
+  static const double width = 168;
   static const double height = 5;
 
   @override
@@ -312,9 +385,7 @@ class _ProgressBar extends StatelessWidget {
         width: width * progress.clamp(0.0, 1.0),
         height: height,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.cobalt, AppColors.signal],
-          ),
+          gradient: LinearGradient(colors: [AppColors.cobalt, AppColors.signal]),
           borderRadius: AppRadii.borderPill,
         ),
       ),
