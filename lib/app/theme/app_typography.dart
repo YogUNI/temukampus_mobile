@@ -97,11 +97,27 @@ class AppTypography {
     letterSpacing: 0.3,
   );
 
+  /// Teks mikro: label di atas poster, eyebrow, kicker (10pt, w700).
+  /// Batas bawah skala — tidak ada teks di bawah 10pt di aplikasi ini.
+  static TextStyle micro = GoogleFonts.plusJakartaSans(
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.4,
+  );
+
   /// Kode unik pendaftaran / Angka transfer (18pt, monospace/grotesque w800)
   static TextStyle numericCode = GoogleFonts.bricolageGrotesque(
     fontSize: 20,
     fontWeight: FontWeight.w800,
     letterSpacing: 1.0,
+    color: AppColors.ink,
+  );
+
+  /// Angka besar yang jadi fokus utama layar (harga total, kode unik).
+  static TextStyle numericHero = GoogleFonts.bricolageGrotesque(
+    fontSize: 26,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.5,
     color: AppColors.ink,
   );
 }

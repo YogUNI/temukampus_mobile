@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../core/utils/formatters.dart';
@@ -13,6 +14,7 @@ import '../../data/models/event_model.dart';
 import '../controllers/events_catalog_controller.dart';
 import '../widgets/empty_events_view.dart';
 import '../widgets/event_grid_card.dart';
+import '../widgets/event_grid_metrics.dart';
 import '../widgets/event_shimmer_loading.dart';
 import '../widgets/filter_chip_bar.dart';
 
@@ -368,27 +370,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // GRID 2-KOLOM ACARA KAMPUS (Modern Production Grid)
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: catalogState.events.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.70,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 14,
-                    ),
-                    itemBuilder: (context, index) {
-                      final event = catalogState.events[index];
-                      return EventGridCard(
-                        event: event,
-                        onTap: () => context.push(AppRoutes.eventDetailPath(event.slug)),
+                  // GRID 2-KOLOM ACARA KAMPUS (tinggi deterministik, anti-overflow)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: catalogState.events.length,
+                        gridDelegate: EventGridMetrics.delegate(constraints.maxWidth),
+                        itemBuilder: (context, index) {
+                          final event = catalogState.events[index];
+                          return EventGridCard(
+                            event: event,
+                            onTap: () => context.push(AppRoutes.eventDetailPath(event.slug)),
+                          );
+                        },
                       );
                     },
                   ),
                 ],
-                const SizedBox(height: 36),
+                const SizedBox(height: AppSpacing.xxxl),
               ],
             ),
           ),

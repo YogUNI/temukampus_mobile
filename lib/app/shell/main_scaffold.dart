@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../router/route_names.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radii.dart';
+import '../theme/app_shadows.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../../core/utils/haptics.dart';
 
+/// Kerangka utama dengan dock navigasi kapsul yang mengambang di atas konten.
+///
+/// Bukan `BottomNavigationBar` bawaan Material: dock mengambang memberi ruang
+/// napas pada konten dan menempatkan keempat tujuan di dalam thumb zone.
 class MainScaffold extends StatelessWidget {
   final Widget child;
 
@@ -19,7 +26,7 @@ class MainScaffold extends StatelessWidget {
   }
 
   void _onItemTapped(int index, BuildContext context) {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     switch (index) {
       case 0:
         context.go(AppRoutes.home);
@@ -50,110 +57,145 @@ class MainScaffold extends StatelessWidget {
       },
       child: Scaffold(
         body: child,
-        bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(
-            top: BorderSide(color: AppColors.ink100, width: 1.5),
-          ),
+        bottomNavigationBar: FloatingNavDock(
+          selectedIndex: selectedIndex,
+          onIndexChanged: (index) => _onItemTapped(index, context),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+      ),
+    );
+  }
+}
+
+/// Dock kapsul mengambang. Publik agar geometrinya bisa diverifikasi tes.
+class FloatingNavDock extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onIndexChanged;
+
+  const FloatingNavDock({
+    super.key,
+    required this.selectedIndex,
+    required this.onIndexChanged,
+  });
+
+  static const List<({String label, IconData icon, IconData activeIcon})> _items = [
+    (label: 'Beranda', icon: Icons.home_outlined, activeIcon: Icons.home_rounded),
+    (label: 'Jelajah', icon: Icons.explore_outlined, activeIcon: Icons.explore_rounded),
+    (
+      label: 'Tiket Saya',
+      icon: Icons.confirmation_number_outlined,
+      activeIcon: Icons.confirmation_number_rounded
+    ),
+    (label: 'Profil', icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Container(
+        key: const ValueKey('nav_dock'),
+        height: 64, // tinggi dock: 64 (8-pt grid) + inset bawah 12
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadii.borderPill,
+          border: Border.all(color: AppColors.ink100),
+          boxShadow: AppShadows.dockBar,
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < _items.length; i++)
+              Expanded(
+                child: _DockItem(
+                  label: _items[i].label,
+                  icon: _items[i].icon,
+                  activeIcon: _items[i].activeIcon,
+                  isSelected: selectedIndex == i,
+                  onTap: () => onIndexChanged(i),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DockItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DockItem({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? AppColors.cobalt : AppColors.ink400;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: InkWell(
+        key: ValueKey('nav_dock_item_$label'),
+        onTap: onTap,
+        borderRadius: AppRadii.borderPill,
+        splashColor: AppColors.cobalt.withValues(alpha: 0.05),
+        child: Center(
+          child: AnimatedContainer(
+            duration: AppDurations.base,
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.cobaltLight : Colors.transparent,
+              borderRadius: AppRadii.borderPill,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildNavItem(
-                  context: context,
-                  index: 0,
-                  isSelected: selectedIndex == 0,
-                  label: 'Beranda',
-                  icon: Icons.home_rounded,
-                  activeIcon: Icons.home_rounded,
+                AnimatedSwitcher(
+                  duration: AppDurations.fast,
+                  child: Icon(
+                    isSelected ? activeIcon : icon,
+                    key: ValueKey(isSelected),
+                    color: color,
+                    size: 22,
+                  ),
                 ),
-                _buildNavItem(
-                  context: context,
-                  index: 1,
-                  isSelected: selectedIndex == 1,
-                  label: 'Jelajah',
-                  icon: Icons.explore_outlined,
-                  activeIcon: Icons.explore_rounded,
-                ),
-                _buildNavItem(
-                  context: context,
-                  index: 2,
-                  isSelected: selectedIndex == 2,
-                  label: 'Tiket Saya',
-                  icon: Icons.confirmation_number_outlined,
-                  activeIcon: Icons.confirmation_number_rounded,
-                ),
-                _buildNavItem(
-                  context: context,
-                  index: 3,
-                  isSelected: selectedIndex == 3,
-                  label: 'Profil',
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.micro.copyWith(
+                    fontSize: 10,
+                    letterSpacing: 0,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    color: color,
+                  ),
                 ),
               ],
             ),
           ),
         ),
       ),
-    ),
-  );
-}
-
-  Widget _buildNavItem({
-    required BuildContext context,
-    required int index,
-    required bool isSelected,
-    required String label,
-    required IconData icon,
-    required IconData activeIcon,
-  }) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _onItemTapped(index, context),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? AppColors.cobalt : AppColors.ink400,
-                size: 24,
-              ),
-              if (isSelected)
-                Positioned(
-                  top: -2,
-                  right: -3,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      color: AppColors.signal, // Titik Sinyal TemuKampus
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTypography.badge.copyWith(
-              fontSize: 10,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? AppColors.cobalt : AppColors.ink500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
-

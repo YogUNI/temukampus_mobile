@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_radii.dart';
+import '../../../../app/theme/app_shadows.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../data/models/event_model.dart';
+import 'event_grid_metrics.dart';
 
-/// Kartu Acara Grid 2-Kolom Modern (Inspirasi: 9 Art Store & Oakory).
+/// Kartu acara grid 2-kolom (inspirasi: grid e-commerce modern).
+///
+/// Tahan teks panjang: area judul memakai [Expanded] sehingga sisa ruang
+/// vertikal diserap judul, bukan meluber keluar kartu. Tinggi kartu ditentukan
+/// oleh [EventGridMetrics], bukan `childAspectRatio`.
 class EventGridCard extends StatelessWidget {
   final EventModel event;
   final VoidCallback onTap;
@@ -19,236 +27,234 @@ class EventGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLowQuota = event.remainingQuota != null && event.remainingQuota! <= 10 && event.remainingQuota! > 0;
+    final isLowQuota = event.remainingQuota != null &&
+        event.remainingQuota! <= 10 &&
+        event.remainingQuota! > 0;
 
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.selection();
-        onTap();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.ink100, width: 1.0),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0C12162B),
-              offset: Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Poster Gambar dengan Floating Badges
-            Stack(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadii.borderMd,
+        border: Border.all(color: AppColors.ink100),
+        boxShadow: AppShadows.softCard,
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadii.borderMd,
+        child: Material(
+          color: AppColors.surface,
+          child: InkWell(
+            onTap: () {
+              AppHaptics.selection();
+              onTap();
+            },
+            splashColor: AppColors.cobalt.withValues(alpha: 0.06),
+            highlightColor: AppColors.cobalt.withValues(alpha: 0.03),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppNetworkOrAssetImage(
-                  imagePath: event.posterUrl,
-                  height: 118,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                AspectRatio(
+                  aspectRatio: EventGridMetrics.posterAspectRatio,
+                  child: _PosterLayer(event: event, isLowQuota: isLowQuota),
                 ),
-                // Gradient scrim agar badge selalu terbaca jelas
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.35),
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.25),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Floating Badge Kiri Atas: Format & SKP
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.ink.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          event.format.toUpperCase(),
-                          style: AppTypography.badge.copyWith(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      if (event.skpPoints > 0) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.cobalt,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${event.skpPoints} SKP',
-                            style: AppTypography.badge.copyWith(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Floating Warning Kuota Kanan Atas
-                if (isLowQuota)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.signal,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Sisa ${event.remainingQuota}!',
-                        style: AppTypography.badge.copyWith(
-                          color: AppColors.ink,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-
-            // 2. Konten Informasi Acara
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nama Penyelenggara
-                  Text(
-                    event.organization.name.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.cobalt,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Judul Acara (2 Baris)
-                  SizedBox(
-                    height: 38,
-                    child: Text(
-                      event.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.titleSmall.copyWith(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Tanggal Acara
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today_rounded, size: 11, color: AppColors.ink400),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          AppFormatters.eventDate(event.startAt),
+                Expanded(
+                  child: Padding(
+                    padding: AppSpacing.cardCompact,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Penyelenggara (eyebrow)
+                        Text(
+                          event.organization.name.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodySmall.copyWith(
-                            fontSize: 11,
-                            color: AppColors.ink500,
+                          style: AppTypography.micro.copyWith(
+                            color: AppColors.cobalt,
+                            fontSize: 9.5,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+                        const SizedBox(height: AppSpacing.xs),
 
-                  // Harga & Tombol Aksi Panah (↗)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'TIKET',
-                            style: AppTypography.labelSmall.copyWith(
-                              fontSize: 8.5,
-                              color: AppColors.ink400,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            event.formattedPrice,
-                            style: AppTypography.titleMedium.copyWith(
+                        // Judul — menyerap sisa tinggi, tidak pernah meluber.
+                        Expanded(
+                          child: Text(
+                            event.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.titleSmall.copyWith(
                               fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
-                              color: event.isPaid ? AppColors.cobalt : AppColors.mintText,
+                              fontWeight: FontWeight.w700,
+                              height: 1.28,
                             ),
                           ),
-                        ],
-                      ),
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: AppColors.ink,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.ink.withValues(alpha: 0.2),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+
+                        // Tanggal
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 12,
+                              color: AppColors.ink400,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                AppFormatters.eventDate(event.startAt),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontSize: 11,
+                                  color: AppColors.ink500,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.arrow_outward_rounded,
-                          size: 16,
-                          color: Colors.white,
+                        const SizedBox(height: AppSpacing.sm),
+
+                        // Harga + aksi masuk
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                event.formattedPrice,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.titleSmall.copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: event.isPaid ? AppColors.ink : AppColors.mintText,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: const BoxDecoration(
+                                color: AppColors.cobalt,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_outward_rounded,
+                                size: 17,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
+class _PosterLayer extends StatelessWidget {
+  final EventModel event;
+  final bool isLowQuota;
+
+  const _PosterLayer({required this.event, required this.isLowQuota});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        AppNetworkOrAssetImage(
+          imagePath: event.posterUrl,
+          fit: BoxFit.cover,
+        ),
+        // Scrim tipis hanya di bagian atas — cukup membuat badge putih terbaca
+        // pada poster terang tanpa menggelapkan fotonya.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.22),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.55],
+            ),
+          ),
+        ),
+        Positioned(
+          top: AppSpacing.sm,
+          left: AppSpacing.sm,
+          right: AppSpacing.sm,
+          child: Row(
+            children: [
+              Flexible(
+                child: _ImageTag(
+                  label: event.format.toUpperCase(),
+                  background: Colors.white.withValues(alpha: 0.94),
+                  foreground: AppColors.ink,
+                ),
+              ),
+              if (event.skpPoints > 0) ...[
+                const SizedBox(width: AppSpacing.xs),
+                _ImageTag(
+                  label: '${event.skpPoints} SKP',
+                  background: AppColors.cobalt,
+                  foreground: Colors.white,
+                ),
+              ],
+              const Spacer(),
+              if (isLowQuota)
+                _ImageTag(
+                  label: 'Sisa ${event.remainingQuota}',
+                  background: AppColors.signal,
+                  foreground: AppColors.ink,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImageTag extends StatelessWidget {
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  const _ImageTag({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: AppRadii.borderXs,
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTypography.micro.copyWith(
+          color: foreground,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
