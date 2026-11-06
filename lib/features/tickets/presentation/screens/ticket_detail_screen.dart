@@ -3,19 +3,23 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_radii.dart';
+import '../../../../app/theme/app_shadows.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/status_pill.dart';
 import '../../../../app/theme/components/sticker_button.dart';
-import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../core/utils/image_compressor.dart';
-import '../../../../shared/widgets/app_network_or_asset_image.dart';
+import '../../data/models/ticket_model.dart';
 import '../controllers/ticket_detail_controller.dart';
+import '../widgets/ticket_pass_card.dart';
 
 class TicketDetailScreen extends ConsumerWidget {
   final String ticketCode;
@@ -38,12 +42,10 @@ class TicketDetailScreen extends ConsumerWidget {
       final canLaunch = await canLaunchUrl(uri);
       if (canLaunch) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tidak dapat membuka tautan.')),
-          );
-        }
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka tautan.')),
+        );
       }
     } catch (_) {
       if (context.mounted) {
@@ -54,6 +56,23 @@ class TicketDetailScreen extends ConsumerWidget {
     }
   }
 
+  void _shareTicket(BuildContext context, TicketModel ticket) {
+    AppHaptics.selection();
+    try {
+      SharePlus.instance.share(
+        ShareParams(
+          text: 'Tiket TemuKampus ${ticket.ticketCode} — "${ticket.event.title}"\n'
+              '${AppFormatters.eventDate(ticket.event.startAt)} · '
+              '${AppFormatters.eventTime(ticket.event.startAt)}\n'
+              '${ticket.event.location}',
+          subject: 'Tiket ${ticket.event.title}',
+        ),
+      );
+    } catch (_) {
+      _copyToClipboard(context, ticket.ticketCode, 'Kode tiket berhasil disalin!');
+    }
+  }
+
   void _showCancelDialog(BuildContext context, WidgetRef ref) {
     AppHaptics.light();
     showDialog(
@@ -61,12 +80,13 @@ class TicketDetailScreen extends ConsumerWidget {
       builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadii.borderMd,
             side: const BorderSide(color: AppColors.ink, width: 1.5),
           ),
           title: Text('Batalkan Pendaftaran?', style: AppTypography.titleMedium),
           content: Text(
-            'Apakah Anda yakin ingin membatalkan pendaftaran tiket ini? Kuota akan dilepaskan kembali ke peserta lain.',
+            'Apakah Anda yakin ingin membatalkan pendaftaran tiket ini? '
+            'Kuota akan dilepaskan kembali ke peserta lain.',
             style: AppTypography.bodySmall,
           ),
           actions: [
@@ -86,7 +106,9 @@ class TicketDetailScreen extends ConsumerWidget {
                     .cancelTicket();
                 if (success && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Pendaftaran tiket berhasil dibatalkan.')),
+                    const SnackBar(
+                      content: Text('Pendaftaran tiket berhasil dibatalkan.'),
+                    ),
                   );
                 }
               },
@@ -105,12 +127,16 @@ class TicketDetailScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xxl,
+            vertical: AppSpacing.xl,
+          ),
           decoration: const BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: AppRadii.sheetTop,
           ),
           child: SafeArea(
+            top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,19 +147,20 @@ class TicketDetailScreen extends ConsumerWidget {
                     height: 4,
                     decoration: BoxDecoration(
                       color: AppColors.ink200,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppRadii.borderPill,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Text('Unggah Ulang Bukti Transfer', style: AppTypography.titleMedium),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Pastikan nomor referensi transfer dan tanggal terlihat jelas.',
                   style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.lg),
                 ListTile(
+                  contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.camera_alt_rounded, color: AppColors.cobalt),
                   title: Text('Kamera Langsung', style: AppTypography.titleSmall),
                   onTap: () async {
@@ -147,6 +174,7 @@ class TicketDetailScreen extends ConsumerWidget {
                   },
                 ),
                 ListTile(
+                  contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.photo_library_rounded, color: AppColors.mintText),
                   title: Text('Galeri Ponsel', style: AppTypography.titleSmall),
                   onTap: () async {
@@ -167,15 +195,28 @@ class TicketDetailScreen extends ConsumerWidget {
     );
   }
 
+  RegistrationStatusType _statusTypeOf(TicketModel ticket) {
+    switch (ticket.status) {
+      case 'confirmed':
+        return RegistrationStatusType.confirmed;
+      case 'needs_revision':
+        return RegistrationStatusType.needsRevision;
+      case 'cancelled':
+        return RegistrationStatusType.cancelled;
+      case 'rejected':
+        return RegistrationStatusType.rejected;
+      case 'pending_verification':
+      default:
+        return RegistrationStatusType.pendingVerification;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailState = ref.watch(ticketDetailControllerProvider(ticketCode));
 
     if (detailState.isLoading && detailState.ticket == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.paper,
-        body: Center(child: CircularProgressIndicator(color: AppColors.cobalt)),
-      );
+      return const _TicketDetailSkeleton();
     }
 
     if (detailState.ticket == null) {
@@ -184,18 +225,19 @@ class TicketDetailScreen extends ConsumerWidget {
         appBar: AppBar(elevation: 0),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xxl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.danger),
-                const SizedBox(height: 12),
+                const Icon(Icons.error_outline_rounded,
+                    size: 48, color: AppColors.danger),
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   detailState.errorMessage ?? 'Tiket tidak ditemukan.',
                   textAlign: TextAlign.center,
                   style: AppTypography.bodyMedium,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 ElevatedButton(
                   onPressed: () => ref
                       .read(ticketDetailControllerProvider(ticketCode).notifier)
@@ -210,25 +252,6 @@ class TicketDetailScreen extends ConsumerWidget {
     }
 
     final ticket = detailState.ticket!;
-    RegistrationStatusType statusType;
-    switch (ticket.status) {
-      case 'confirmed':
-        statusType = RegistrationStatusType.confirmed;
-        break;
-      case 'needs_revision':
-        statusType = RegistrationStatusType.needsRevision;
-        break;
-      case 'cancelled':
-        statusType = RegistrationStatusType.cancelled;
-        break;
-      case 'rejected':
-        statusType = RegistrationStatusType.rejected;
-        break;
-      case 'pending_verification':
-      default:
-        statusType = RegistrationStatusType.pendingVerification;
-        break;
-    }
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -246,375 +269,233 @@ class TicketDetailScreen extends ConsumerWidget {
             }
           },
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Bagikan tiket',
+            icon: const Icon(Icons.ios_share_rounded, color: AppColors.ink),
+            onPressed: () => _shareTicket(context, ticket),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.gutter,
+          AppSpacing.lg,
+          AppSpacing.gutter,
+          AppSpacing.xxl,
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // KARTU TIKET LENGKAP MOTIF FISIK
-            TicketContainer(
-              punchRadius: 16.0,
-              punchPositionPercent: 0.58,
-              borderRadius: 20.0,
-              borderColor: AppColors.ink,
-              borderWidth: 1.6,
-              hasShadow: true,
-              shadowOffset: const Offset(4, 4),
-              child: Column(
-                children: [
-                  // 1. BAGIAN ATAS: QR CODE & KODE TIKET
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        // Header: Ormawa & Cap Stempel Status
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('TEMUKAMPUS PASS', style: AppTypography.badge.copyWith(color: AppColors.cobalt, fontSize: 11)),
-                            StatusPill(status: statusType, isStamp: true),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // QR CODE WIDGET
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.ink, width: 1.6),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.ink,
-                                offset: Offset(2.5, 2.5),
-                                blurRadius: 0,
-                              ),
-                            ],
-                          ),
-                          child: QrImageView(
-                            data: ticket.ticketCode,
-                            version: QrVersions.auto,
-                            size: 200.0,
-                            backgroundColor: Colors.white,
-                            eyeStyle: const QrEyeStyle(
-                              eyeShape: QrEyeShape.square,
-                              color: AppColors.ink,
-                            ),
-                            dataModuleStyle: const QrDataModuleStyle(
-                              dataModuleShape: QrDataModuleShape.square,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        // KODE TIKET MONOSPACED
-                        GestureDetector(
-                          onTap: () => _copyToClipboard(context, ticket.ticketCode, 'Kode tiket disalin!'),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                ticket.ticketCode,
-                                style: AppTypography.hero.copyWith(
-                                  fontSize: 22,
-                                  letterSpacing: 2.0,
-                                  color: AppColors.cobalt,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.copy_rounded, size: 16, color: AppColors.ink500),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Kotak Petunjuk QR Hari-H
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: ticket.isCheckedIn ? AppColors.mintLight : AppColors.paper,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: ticket.isCheckedIn ? AppColors.mint : AppColors.ink200,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                ticket.isCheckedIn ? Icons.verified_rounded : Icons.info_outline_rounded,
-                                size: 16,
-                                color: ticket.isCheckedIn ? AppColors.mintText : AppColors.ink500,
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  ticket.isCheckedIn
-                                      ? 'Presensi Masuk Berhasil: ${AppFormatters.eventTime(ticket.checkedInAt!)}'
-                                      : 'Tunjukkan QR Code ini ke panitia di meja registrasi saat hari-H.',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: ticket.isCheckedIn ? AppColors.mintText : AppColors.ink700,
-                                    fontWeight: ticket.isCheckedIn ? FontWeight.w700 : FontWeight.w500,
-                                    fontSize: 11,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 2. PERFORASI SOBEKAN
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: DottedTearLine(color: AppColors.ink200),
-                  ),
-
-                  // 3. BAGIAN BAWAH: RINCIAN ACARA & PESERTA
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    color: AppColors.surface,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (ticket.event.posterUrl != null) ...[
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: AppNetworkOrAssetImage(
-                                  imagePath: ticket.event.posterUrl,
-                                  width: 58,
-                                  height: 58,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                            Expanded(
-                              child: Text(
-                                ticket.event.title,
-                                style: AppTypography.titleMedium.copyWith(fontSize: 15.5),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Jadwal & Lokasi
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.cobalt),
-                            const SizedBox(width: 8),
-                            Text(
-                              AppFormatters.eventDate(ticket.event.startAt),
-                              style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                            ),
-                            const SizedBox(width: 14),
-                            const Icon(Icons.access_time_rounded, size: 14, color: AppColors.cobalt),
-                            const SizedBox(width: 4),
-                            Text(
-                              AppFormatters.eventTime(ticket.event.startAt),
-                              style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded, size: 14, color: AppColors.cobalt),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                ticket.event.location,
-                                style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 24),
-
-                        // Profil Peserta
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('NAMA PESERTA', style: AppTypography.labelSmall.copyWith(fontSize: 9, color: AppColors.ink400)),
-                                Text(ticket.participant.name, style: AppTypography.titleSmall.copyWith(fontSize: 13)),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('NIM MAHASISWA', style: AppTypography.labelSmall.copyWith(fontSize: 9, color: AppColors.ink400)),
-                                Text(ticket.participant.nim ?? '-', style: AppTypography.numericCode.copyWith(fontSize: 13)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            TicketPassCard(
+              ticket: ticket,
+              statusType: _statusTypeOf(ticket),
+              onCopyCode: () => _copyToClipboard(
+                context,
+                ticket.ticketCode,
+                'Kode tiket berhasil disalin!',
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
 
-            // 4. KOTAK PERINGATAN REVISI (Jika status needs_revision)
+            // Aksi utama: bagikan tiket
+            SizedBox(
+              width: double.infinity,
+              child: StickerButton(
+                label: 'Bagikan Tiket',
+                variant: StickerButtonVariant.outline,
+                icon: const Icon(Icons.share_rounded, color: AppColors.ink, size: 18),
+                onPressed: () => _shareTicket(context, ticket),
+              ),
+            ),
+
+            // === REVISI BUKTI (status needs_revision) ===
             if (ticket.isNeedsRevision) ...[
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: AppColors.signalLight,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.signal, width: 1.6),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.ink,
-                      offset: Offset(3, 3),
-                      blurRadius: 0,
-                    ),
-                  ],
+                  borderRadius: AppRadii.borderMd,
+                  border: Border.all(color: AppColors.signal, width: 1.4),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: AppColors.signal, size: 22),
-                        const SizedBox(width: 8),
+                        const Icon(Icons.warning_amber_rounded,
+                            color: AppColors.signal, size: 20),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           'Bukti Pembayaran Perlu Revisi',
-                          style: AppTypography.titleSmall.copyWith(color: AppColors.ink, fontSize: 14),
+                          style: AppTypography.titleSmall.copyWith(fontSize: 14),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
-                      ticket.revisionNotes ?? 'Bukti pembayaran tidak terbaca. Mohon unggah bukti baru yang jelas.',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.ink, fontSize: 12),
+                      ticket.revisionNotes ??
+                          'Bukti pembayaran tidak terbaca. Mohon unggah bukti baru yang jelas.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.ink,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.md),
                     SizedBox(
                       width: double.infinity,
                       child: StickerButton(
                         label: 'Unggah Ulang Bukti Bayar',
                         variant: StickerButtonVariant.secondary,
-                        icon: const Icon(Icons.cloud_upload_outlined, color: AppColors.ink, size: 16),
+                        icon: const Icon(Icons.cloud_upload_outlined,
+                            color: AppColors.ink, size: 16),
                         onPressed: () => _showResubmitSheet(context, ref),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
             ],
 
-            // 5. AKSES KHUSUS PESERTA TERKONFIRMASI (BR-13)
+            // === AKSES PESERTA TERKONFIRMASI (BR-13) ===
             if (ticket.isConfirmed && ticket.unlockedAccess.canAccessLinks) ...[
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.mint, width: 1.4),
-                  boxShadow: const [
-                    BoxShadow(color: AppColors.ink, offset: Offset(2.5, 2.5), blurRadius: 0),
-                  ],
+                  borderRadius: AppRadii.borderMd,
+                  border: Border.all(color: AppColors.mint.withValues(alpha: 0.5)),
+                  boxShadow: AppShadows.softCard,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.lock_open_rounded, color: AppColors.mint, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Akses Khusus Peserta Terkonfirmasi',
-                          style: AppTypography.titleSmall.copyWith(color: AppColors.mintText, fontSize: 13),
+                        const Icon(Icons.lock_open_rounded,
+                            color: AppColors.mint, size: 18),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            'Akses Khusus Peserta Terkonfirmasi',
+                            style: AppTypography.titleSmall.copyWith(
+                              color: AppColors.mintText,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-
                     if (ticket.unlockedAccess.waGroupUrl != null) ...[
+                      const SizedBox(height: AppSpacing.md),
                       GestureDetector(
                         onTap: () => _openUrl(context, ticket.unlockedAccess.waGroupUrl),
+                        behavior: HitTestBehavior.opaque,
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                            horizontal: AppSpacing.lg,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF25D366), // Hijau Resmi WhatsApp
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.ink, width: 1.4),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.ink,
-                                offset: Offset(2.5, 2.5),
-                                blurRadius: 0,
-                              ),
-                            ],
+                            color: const Color(0xFF25D366),
+                            borderRadius: AppRadii.borderSm,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.chat_rounded, color: Colors.white, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Gabung Grup WhatsApp Peserta',
-                                style: AppTypography.label.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                              const Icon(Icons.chat_rounded,
+                                  color: Colors.white, size: 18),
+                              const SizedBox(width: AppSpacing.sm),
+                              Flexible(
+                                child: Text(
+                                  'Gabung Grup WhatsApp Peserta',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.label.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
                     ],
-
                     if (ticket.unlockedAccess.meetingUrl != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
                       SizedBox(
                         width: double.infinity,
                         child: StickerButton(
                           label: 'Buka Tautan Zoom / Google Meet',
                           variant: StickerButtonVariant.outline,
-                          icon: const Icon(Icons.videocam_outlined, color: AppColors.ink, size: 16),
-                          onPressed: () => _openUrl(context, ticket.unlockedAccess.meetingUrl),
+                          icon: const Icon(Icons.videocam_outlined,
+                              color: AppColors.ink, size: 16),
+                          onPressed: () =>
+                              _openUrl(context, ticket.unlockedAccess.meetingUrl),
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
             ],
 
-            // 6. BATALKAN PENDAFTARAN (Jika belum check-in & belum cancelled)
+            // === BATALKAN ===
             if (!ticket.isCheckedIn && !ticket.isCancelled) ...[
-              TextButton(
-                onPressed: () => _showCancelDialog(context, ref),
-                child: Text(
-                  'Batalkan Pendaftaran Tiket',
-                  style: AppTypography.labelSmall.copyWith(color: AppColors.dangerText),
+              const SizedBox(height: AppSpacing.md),
+              Center(
+                child: TextButton(
+                  onPressed: () => _showCancelDialog(context, ref),
+                  child: Text(
+                    'Batalkan Pendaftaran Tiket',
+                    style: AppTypography.labelSmall.copyWith(
+                      color: AppColors.dangerText,
+                    ),
+                  ),
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 24),
+class _TicketDetailSkeleton extends StatelessWidget {
+  const _TicketDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.paper,
+      appBar: AppBar(elevation: 0),
+      body: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.gutter),
+        child: Column(
+          children: [
+            Container(
+              height: 520,
+              decoration: BoxDecoration(
+                color: AppColors.ink100,
+                borderRadius: AppRadii.borderXl,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.ink100,
+                borderRadius: AppRadii.borderSm,
+              ),
+            ),
           ],
         ),
       ),

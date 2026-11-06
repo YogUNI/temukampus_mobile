@@ -1,94 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_radii.dart';
+import '../../../../app/theme/app_shadows.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
-import '../../../../app/theme/components/status_pill.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
-import '../controllers/tickets_controller.dart';
 import '../../data/models/ticket_model.dart';
+import '../controllers/tickets_controller.dart';
+import '../widgets/ticket_list_card.dart';
+import '../widgets/ticket_shimmer.dart';
 
-class MyTicketsScreen extends ConsumerStatefulWidget {
+class MyTicketsScreen extends ConsumerWidget {
   const MyTicketsScreen({super.key});
 
-  @override
-  ConsumerState<MyTicketsScreen> createState() => _MyTicketsScreenState();
-}
-
-class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
-  final List<Map<String, String>> _tabs = const [
-    {'key': 'upcoming', 'label': 'Akan Datang'},
-    {'key': 'pending', 'label': 'Verifikasi'},
-    {'key': 'completed', 'label': 'Selesai'},
-    {'key': 'cancelled', 'label': 'Dibatalkan'},
+  static const List<({String key, String label})> tabs = [
+    (key: 'upcoming', label: 'Akan Datang'),
+    (key: 'pending', label: 'Verifikasi'),
+    (key: 'completed', label: 'Selesai'),
+    (key: 'cancelled', label: 'Dibatalkan'),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
     final ticketsState = ref.watch(ticketsControllerProvider);
 
-    // Mode Tamu (Guest)
     if (authState.user == null) {
-      return Scaffold(
-        backgroundColor: AppColors.paper,
-        appBar: AppBar(
-          title: Text('Tiket Saya', style: AppTypography.titleMedium),
-          elevation: 0,
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TicketContainer(
-                  width: 80,
-                  height: 80,
-                  punchRadius: 10.0,
-                  punchPositionPercent: 0.5,
-                  borderColor: AppColors.ink,
-                  borderWidth: 1.6,
-                  hasShadow: true,
-                  shadowOffset: const Offset(3, 3),
-                  child: const Center(
-                    child: Icon(Icons.confirmation_number_outlined, size: 40, color: AppColors.cobalt),
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'Masuk untuk Melihat Tiketmu',
-                  style: AppTypography.hero.copyWith(fontSize: 20),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Masuk dengan akun mahasiswa UMB untuk melihat tiket dan riwayat pendaftaranmu.',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.ink500, height: 1.4),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: 220,
-                  child: StickerButton(
-                    label: 'Masuk ke Akun',
-                    variant: StickerButtonVariant.primary,
-                    icon: const Icon(Icons.login_rounded, color: Colors.white, size: 18),
-                    onPressed: () {
-                      AppHaptics.selection();
-                      context.push(AppRoutes.login);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return _GuestTicketsView(
+        onLogin: () {
+          AppHaptics.selection();
+          context.push(AppRoutes.login);
+        },
       );
     }
 
@@ -100,64 +49,35 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
       ),
       body: Column(
         children: [
-          // 1. Tab Bar Stiker 4 Kategori Tiket
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          // Tab kapsul 4 kategori
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.gutter,
+              AppSpacing.sm,
+              AppSpacing.gutter,
+              AppSpacing.md,
+            ),
             child: Row(
-              children: _tabs.map((tab) {
-                final isSelected = ticketsState.activeTab == tab['key'];
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      AppHaptics.light();
-                      ref.read(ticketsControllerProvider.notifier).changeTab(tab['key']!);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.cobalt : AppColors.surface,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected ? AppColors.cobalt : AppColors.ink200,
-                          width: 1.2,
-                        ),
-                        boxShadow: isSelected
-                            ? const [
-                                BoxShadow(
-                                  color: AppColors.ink,
-                                  offset: Offset(1.5, 1.5),
-                                  blurRadius: 0,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        tab['label']!,
-                        style: AppTypography.labelSmall.copyWith(
-                          color: isSelected ? Colors.white : AppColors.ink700,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 11,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              children: [
+                for (final tab in tabs)
+                  Expanded(
+                    child: _TabPill(
+                      label: tab.label,
+                      isSelected: ticketsState.activeTab == tab.key,
+                      onTap: () {
+                        AppHaptics.light();
+                        ref.read(ticketsControllerProvider.notifier).changeTab(tab.key);
+                      },
                     ),
                   ),
-                );
-              }).toList(),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-
-          // 2. Daftar Tiket
           Expanded(
             child: RefreshIndicator(
               color: AppColors.cobalt,
               onRefresh: () => ref.read(ticketsControllerProvider.notifier).refresh(),
-              child: _buildTicketContent(ticketsState),
+              child: _buildContent(context, ref, ticketsState),
             ),
           ),
         ],
@@ -165,22 +85,30 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     );
   }
 
-  Widget _buildTicketContent(TicketsState state) {
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    TicketsState state,
+  ) {
     if (state.isLoading && state.tickets.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.cobalt));
+      return const TicketShimmer(itemCount: 3);
     }
 
     if (state.errorMessage != null && state.tickets.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.danger),
-              const SizedBox(height: 12),
-              Text(state.errorMessage!, textAlign: TextAlign.center, style: AppTypography.bodyMedium),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                state.errorMessage!,
+                textAlign: TextAlign.center,
+                style: AppTypography.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.lg),
               ElevatedButton(
                 onPressed: () => ref.read(ticketsControllerProvider.notifier).refresh(),
                 child: const Text('Coba Lagi'),
@@ -192,243 +120,239 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     }
 
     if (state.isEmpty) {
-      String title;
-      String message;
-      String buttonLabel = 'Jelajah Acara';
-
-      switch (state.activeTab) {
-        case 'pending':
-          title = 'Belum Ada Tiket Menunggu Verifikasi';
-          message = 'Belum ada tiket yang menunggu verifikasi. Cari acara seru lainnya yuk!';
-          break;
-        case 'completed':
-          title = 'Belum Ada Tiket Selesai';
-          message = 'Belum ada riwayat acara yang selesai.';
-          break;
-        case 'cancelled':
-          title = 'Tidak Ada Tiket Dibatalkan';
-          message = 'Tidak ada tiket yang dibatalkan.';
-          break;
-        case 'upcoming':
-        default:
-          title = 'Belum Ada Tiket Mendatang';
-          message = 'Belum ada tiket acara mendatang. Temukan seminar & workshop kampus!';
-          buttonLabel = 'Cari Acara';
-          break;
-      }
-
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TicketContainer(
-                width: 76,
-                height: 76,
-                punchRadius: 8.0,
-                borderColor: AppColors.ink,
-                borderWidth: 1.5,
-                hasShadow: true,
-                shadowOffset: const Offset(2.5, 2.5),
-                child: const Center(
-                  child: Icon(Icons.confirmation_number_outlined, size: 38, color: AppColors.ink400),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(title, style: AppTypography.titleMedium.copyWith(fontSize: 16), textAlign: TextAlign.center),
-              const SizedBox(height: 6),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: 180,
-                child: StickerButton(
-                  label: buttonLabel,
-                  variant: StickerButtonVariant.outline,
-                  icon: const Icon(Icons.explore_rounded, size: 16, color: AppColors.ink),
-                  onPressed: () {
-                    AppHaptics.selection();
-                    context.go(AppRoutes.explore);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      return _EmptyTicketsView(
+        activeTab: state.activeTab,
+        onExplore: () {
+          AppHaptics.selection();
+          context.go(AppRoutes.explore);
+        },
       );
     }
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.gutter,
+        AppSpacing.sm,
+        AppSpacing.gutter,
+        AppSpacing.xxl,
+      ),
       itemCount: state.tickets.length,
       itemBuilder: (context, index) {
-        final ticket = state.tickets[index];
+        final TicketModel ticket = state.tickets[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: _buildTicketCard(ticket),
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          child: TicketListCard(
+            ticket: ticket,
+            onTap: () => context.push(AppRoutes.ticketDetailPath(ticket.ticketCode)),
+          ),
         );
       },
     );
   }
+}
 
-  Widget _buildTicketCard(TicketModel ticket) {
-    RegistrationStatusType statusType;
-    switch (ticket.status) {
-      case 'confirmed':
-        statusType = RegistrationStatusType.confirmed;
-        break;
-      case 'needs_revision':
-        statusType = RegistrationStatusType.needsRevision;
-        break;
-      case 'cancelled':
-        statusType = RegistrationStatusType.cancelled;
-        break;
-      case 'rejected':
-        statusType = RegistrationStatusType.rejected;
-        break;
-      case 'pending_verification':
-      default:
-        statusType = RegistrationStatusType.pendingVerification;
-        break;
-    }
+class _TabPill extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.light();
-        context.push(AppRoutes.ticketDetailPath(ticket.ticketCode));
-      },
-      child: TicketContainer(
-        punchRadius: 12.0,
-        punchPositionPercent: 0.70,
-        borderRadius: 16.0,
-        borderColor: AppColors.ink,
-        borderWidth: 1.4,
-        hasShadow: true,
-        shadowOffset: const Offset(3, 3),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Kode Tiket & Stempel Status
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        ticket.ticketCode,
-                        style: AppTypography.numericCode.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.cobalt,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      StatusPill(status: statusType, isStamp: true),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+  const _TabPill({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
-                  // Judul Acara
-                  Text(
-                    ticket.event.title,
-                    style: AppTypography.titleMedium.copyWith(fontSize: 15),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: AppDurations.base,
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.ink : AppColors.surface,
+            borderRadius: AppRadii.borderPill,
+            border: Border.all(
+              color: isSelected ? AppColors.ink : AppColors.ink200,
+            ),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 11.5,
+              color: isSelected ? Colors.white : AppColors.ink700,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-                  // Jadwal & Lokasi
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today_rounded, size: 13, color: AppColors.ink500),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppFormatters.eventDate(ticket.event.startAt),
-                        style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.location_on_rounded, size: 13, color: AppColors.ink500),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          ticket.event.location,
-                          style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+class _EmptyTicketsView extends StatelessWidget {
+  final String activeTab;
+  final VoidCallback onExplore;
 
-                  // Catatan Revisi jika ada
-                  if (ticket.isNeedsRevision && ticket.revisionNotes != null) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.signalLight,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.signal.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded, color: AppColors.signal, size: 16),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Revisi: ${ticket.revisionNotes}',
-                              style: AppTypography.bodySmall.copyWith(fontSize: 11, color: AppColors.ink),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
+  const _EmptyTicketsView({required this.activeTab, required this.onExplore});
+
+  @override
+  Widget build(BuildContext context) {
+    final (title, message, buttonLabel) = switch (activeTab) {
+      'pending' => (
+          'Belum Ada Tiket Menunggu Verifikasi',
+          'Belum ada tiket yang menunggu verifikasi. Cari acara seru lainnya yuk!',
+          'Jelajah Acara',
+        ),
+      'completed' => (
+          'Belum Ada Tiket Selesai',
+          'Belum ada riwayat acara yang selesai.',
+          'Jelajah Acara',
+        ),
+      'cancelled' => (
+          'Tidak Ada Tiket Dibatalkan',
+          'Tidak ada tiket yang dibatalkan.',
+          'Jelajah Acara',
+        ),
+      _ => (
+          'Belum Ada Tiket Mendatang',
+          'Belum ada tiket acara mendatang. Temukan seminar & workshop kampus!',
+          'Cari Acara',
+        ),
+    };
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.huge,
+      ),
+      children: [
+        Center(
+          child: TicketContainer(
+            width: 76,
+            height: 76,
+            punchRadius: 8,
+            punchPositionPercent: 0.5,
+            borderColor: AppColors.ink,
+            borderWidth: 1.5,
+            hasShadow: true,
+            shadowOffset: const Offset(2.5, 2.5),
+            child: const Center(
+              child: Icon(
+                Icons.confirmation_number_outlined,
+                size: 38,
+                color: AppColors.ink400,
               ),
             ),
-
-            // Perforasi
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14),
-              child: DottedTearLine(color: AppColors.ink200),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: AppTypography.titleMedium.copyWith(fontSize: 16),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Center(
+          child: SizedBox(
+            width: 180,
+            child: StickerButton(
+              label: buttonLabel,
+              variant: StickerButtonVariant.outline,
+              icon: const Icon(Icons.explore_rounded, size: 16, color: AppColors.ink),
+              onPressed: onExplore,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-            // Stub Bagian Bawah
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: AppColors.paper,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Peserta: ${ticket.participant.name}',
-                    style: AppTypography.bodySmall.copyWith(fontSize: 11, color: AppColors.ink500),
+class _GuestTicketsView extends StatelessWidget {
+  final VoidCallback onLogin;
+
+  const _GuestTicketsView({required this.onLogin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.paper,
+      appBar: AppBar(
+        title: Text('Tiket Saya', style: AppTypography.titleMedium),
+        elevation: 0,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xxl,
+            vertical: AppSpacing.huge,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TicketContainer(
+                width: 80,
+                height: 80,
+                punchRadius: 10,
+                punchPositionPercent: 0.5,
+                borderColor: AppColors.ink,
+                borderWidth: 1.6,
+                hasShadow: true,
+                shadowOffset: const Offset(3, 3),
+                child: const Center(
+                  child: Icon(
+                    Icons.confirmation_number_outlined,
+                    size: 40,
+                    color: AppColors.cobalt,
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        'Buka Tiket',
-                        style: AppTypography.labelSmall.copyWith(color: AppColors.cobalt, fontSize: 11),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded, color: AppColors.cobalt, size: 13),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xxl),
+              Text(
+                'Masuk untuk Melihat Tiketmu',
+                textAlign: TextAlign.center,
+                style: AppTypography.hero.copyWith(fontSize: 20),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Masuk dengan akun mahasiswa UMB untuk melihat tiket dan riwayat pendaftaranmu.',
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.ink500,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              SizedBox(
+                width: 220,
+                child: StickerButton(
+                  label: 'Masuk ke Akun',
+                  variant: StickerButtonVariant.primary,
+                  icon: const Icon(Icons.login_rounded, color: Colors.white, size: 18),
+                  onPressed: onLogin,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

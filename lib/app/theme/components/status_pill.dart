@@ -164,9 +164,15 @@ class StatusPill extends StatelessWidget {
         children: [
           Icon(status.icon, size: 13, color: text),
           const SizedBox(width: 4),
-          Text(
-            status.label,
-            style: AppTypography.badge.copyWith(color: text),
+          // Flexible + ellipsis agar pill tetap utuh saat ruang sempit
+          // (mis. di stub kartu tiket bersama kode & tombol aksi).
+          Flexible(
+            child: Text(
+              status.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.badge.copyWith(color: text),
+            ),
           ),
         ],
       ),
