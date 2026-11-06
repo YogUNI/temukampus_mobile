@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:temukampus_mobile/features/events/data/models/event_model.dart';
+import 'package:temukampus_mobile/core/utils/image_compressor.dart';
 import 'package:temukampus_mobile/features/registration/data/models/registration_model.dart';
 import 'package:temukampus_mobile/features/registration/presentation/widgets/registration_payment_card.dart';
 import 'package:temukampus_mobile/features/registration/presentation/widgets/registration_proof_upload_card.dart';
@@ -198,5 +202,57 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('Klik untuk Pilih Bukti Transfer'), findsNothing);
     });
+
+    testWidgets('pratinjau thumbnail tampil & bisa diketuk untuk diperbesar',
+        (tester) async {
+      final bytes = kTransparentImage;
+      final proof = PickedImageData(
+        file: XFile.fromData(bytes, name: 'bukti-transfer.png'),
+        bytes: bytes,
+        sizeInBytes: bytes.length,
+        fileName: 'bukti-transfer.png',
+      );
+
+      Uint8List? previewed;
+      var previewCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: RegistrationProofUploadCard(
+              selectedProof: proof,
+              isCompressing: false,
+              onPick: () {},
+              onPreview: (data, name) {
+                previewed = data;
+                previewCount++;
+              },
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bukti Siap Diunggah'), findsOneWidget);
+      expect(find.text('bukti-transfer.png'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pump();
+      expect(previewCount, 1);
+      expect(previewed, isNotNull);
+    });
   });
 }
+
+/// PNG transparan 1x1 untuk pratinjau di tes.
+final Uint8List kTransparentImage = Uint8List.fromList(<int>[
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+  0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+]);
