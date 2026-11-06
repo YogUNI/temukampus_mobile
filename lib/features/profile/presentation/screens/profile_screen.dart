@@ -308,25 +308,201 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _showInfoDialog(String title, String content) {
+  void _showFaqSheet() {
     AppHaptics.light();
-    showDialog(
+    final faqs = [
+      {
+        'q': 'Bagaimana cara pendaftaran acara berbayar?',
+        'a': 'Pilih acara, lalu transfer ke rekening panitia sesuai nominal tepat hingga 3 digit kode unik. Unggah foto bukti transfer struk / m-banking. Panitia akan memverifikasi maksimal 1x24 jam.'
+      },
+      {
+        'q': 'Bagaimana cara presensi saat hari-H acara?',
+        'a': 'Buka tab "Tiket Saya", pilih tiket dengan status Terkonfirmasi, lalu tunjukkan kode QR kepada panitia di meja registrasi gerbang kampus untuk dipindai.'
+      },
+      {
+        'q': 'Apa itu Poin SKP kemahasiswaan?',
+        'a': 'SKP (Satuan Kredit Partisipasi) adalah poin kegiatan resmi mahasiswa Universitas Mercu Buana yang terakumulasi sebagai syarat kelulusan dan SKPI.'
+      },
+      {
+        'q': 'Kapan link grup WhatsApp peserta dibuka?',
+        'a': 'Tautan grup WhatsApp dan tautan meeting daring akan otomatis terbuka setelah pendaftaran Anda disetujui (Confirmed) oleh panitia sesuai aturan privasi kampus.'
+      },
+      {
+        'q': 'Apa yang harus dilakukan jika bukti transfer perlu revisi?',
+        'a': 'Buka rincian tiket berstatus "Perlu Revisi", baca catatan panitia, lalu tekan tombol "Unggah Ulang Bukti Bayar" dengan foto struk yang lebih jelas dan terbaca.'
+      },
+    ];
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.ink, width: 1.5),
-        ),
-        title: Text(title, style: AppTypography.titleMedium),
-        content: Text(content, style: AppTypography.bodySmall),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cobalt, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.75,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-        ],
-      ),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.ink200,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.cobaltLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.help_center_rounded, color: AppColors.cobalt, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Pusat Bantuan & Tanya Jawab', style: AppTypography.titleMedium),
+                        Text('Pertanyaan umum seputar kegiatan kampus UMB', style: AppTypography.bodySmall.copyWith(color: AppColors.ink500)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: faqs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (ctx, index) {
+                      final item = faqs[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.ink100, width: 1.2),
+                        ),
+                        child: Theme(
+                          data: Theme.of(ctx).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                            title: Text(
+                              item['q']!,
+                              style: AppTypography.titleSmall.copyWith(fontSize: 13),
+                            ),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+                                child: Text(
+                                  item['a']!,
+                                  style: AppTypography.bodySmall.copyWith(color: AppColors.ink700, height: 1.45),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAboutAppSheet() {
+    AppHaptics.light();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.ink200,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.cobalt,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.ink, width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(color: AppColors.ink, offset: Offset(3, 3), blurRadius: 0),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.confirmation_number_rounded, color: Colors.white, size: 34),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text('TemuKampus Mobile', style: AppTypography.hero.copyWith(fontSize: 20)),
+                const SizedBox(height: 2),
+                Text('Versi 1.0.0 (Build 2025.1) • Official Campus App', style: AppTypography.bodySmall.copyWith(color: AppColors.ink500)),
+                const SizedBox(height: 14),
+                Text(
+                  'Aplikasi resmi mahasiswa Universitas Mercu Buana untuk eksplorasi kegiatan kampus, pendaftaran otomatis berbasis NIM, tiket digital presensi ber-QR, dan verifikasi kegiatan ber-SKP.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.ink700, height: 1.45),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.paper,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.ink100),
+                  ),
+                  child: Text(
+                    'Universitas Mercu Buana — Kampus Meruya, Jakarta Barat',
+                    style: AppTypography.badge.copyWith(color: AppColors.cobalt, fontSize: 10),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: StickerButton(
+                    label: 'Tutup',
+                    variant: StickerButtonVariant.outline,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -334,6 +510,119 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final user = authState.user;
+
+    // Tampilan Mode Tamu (Guest Mode)
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: AppColors.paper,
+        appBar: AppBar(
+          title: Text('Profil Pengguna', style: AppTypography.titleMedium),
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            children: [
+              // Kartu Tamu Motif Tiket
+              TicketContainer(
+                punchRadius: 12.0,
+                punchPositionPercent: 0.5,
+                borderRadius: 16.0,
+                borderColor: AppColors.ink,
+                borderWidth: 1.5,
+                hasShadow: true,
+                shadowOffset: const Offset(3, 3),
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: AppColors.cobaltLight,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.cobalt, width: 1.5),
+                        ),
+                        child: const Icon(Icons.person_outline_rounded, color: AppColors.cobalt, size: 36),
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Mode Tamu (Eksplorasi)', style: AppTypography.hero.copyWith(fontSize: 20)),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Masuk dengan akun mahasiswa UMB untuk melihat profil lengkap, akumulasi poin SKP, dan mengelola tiket acara Anda.',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.ink500, height: 1.4),
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        child: StickerButton(
+                          label: 'Masuk ke Akun',
+                          variant: StickerButtonVariant.primary,
+                          icon: const Icon(Icons.login_rounded, color: Colors.white, size: 18),
+                          onPressed: () {
+                            AppHaptics.selection();
+                            context.push(AppRoutes.login);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: StickerButton(
+                          label: 'Daftar Akun Baru',
+                          variant: StickerButtonVariant.outline,
+                          onPressed: () {
+                            AppHaptics.selection();
+                            context.push(AppRoutes.register);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Menu Informasi Tambahan untuk Tamu
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.ink200, width: 1.2),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.help_outline_rounded, color: AppColors.cobalt),
+                      title: Text('Pusat Bantuan & Tanya Jawab', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
+                      onTap: _showFaqSheet,
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.info_outline_rounded, color: AppColors.cobalt),
+                      title: Text('Tentang TemuKampus', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
+                      onTap: _showAboutAppSheet,
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.description_outlined, color: AppColors.cobalt),
+                      title: Text('Syarat & Ketentuan', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
+                      onTap: () => _showAboutAppSheet(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 36),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -364,7 +653,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         radius: 38,
                         backgroundColor: AppColors.cobaltLight,
                         child: Text(
-                          user != null && user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                           style: AppTypography.hero.copyWith(color: AppColors.cobalt, fontSize: 30),
                         ),
                       ),
@@ -387,13 +676,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(user?.name ?? 'Mahasiswa UMB', style: AppTypography.titleMedium.copyWith(fontSize: 17)),
+                  Text(user.name, style: AppTypography.titleMedium.copyWith(fontSize: 17)),
                   const SizedBox(height: 3),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(user?.email ?? '', style: AppTypography.bodySmall),
-                      if (user?.emailVerified ?? false) ...[
+                      Text(user.email, style: AppTypography.bodySmall),
+                      if (user.emailVerified) ...[
                         const SizedBox(width: 4),
                         const Icon(Icons.verified_rounded, color: AppColors.mint, size: 15),
                       ],
@@ -408,7 +697,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
                     ),
                     child: Text(
-                      user?.academicSummary ?? 'Mahasiswa UMB',
+                      user.academicSummary,
                       style: AppTypography.badge.copyWith(color: AppColors.cobalt),
                     ),
                   ),
@@ -466,7 +755,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 18),
 
             // 3. Banner Pintu Masuk Panitia Hari-H (Hanya Muncul untuk Admin / Panitia)
-            if (user?.canScanTickets ?? false) ...[
+            if (user.canScanTickets) ...[
               GestureDetector(
                 onTap: () {
                   AppHaptics.selection();
@@ -562,11 +851,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  _buildProfileRow('NIM Mahasiswa', user?.nim ?? '-', isReadOnly: true),
+                  _buildProfileRow('NIM Mahasiswa', user.nim ?? '-', isReadOnly: true),
                   const Divider(height: 20),
-                  _buildProfileRow('Program Studi', user?.studyProgram?.name ?? '-', isReadOnly: true),
+                  _buildProfileRow('Program Studi', user.studyProgram?.name ?? '-', isReadOnly: true),
                   const Divider(height: 20),
-                  _buildProfileRow('Tahun Angkatan', user?.cohortYear?.toString() ?? '-', isReadOnly: true),
+                  _buildProfileRow('Tahun Angkatan', user.cohortYear?.toString() ?? '-', isReadOnly: true),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -575,11 +864,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('No. WhatsApp', style: AppTypography.bodyMedium),
-                          Text(user?.phone ?? '-', style: AppTypography.label.copyWith(fontSize: 13)),
+                          Text(user.phone ?? '-', style: AppTypography.label.copyWith(fontSize: 13)),
                         ],
                       ),
                       TextButton(
-                        onPressed: () => _showEditPhoneSheet(user?.phone),
+                        onPressed: () => _showEditPhoneSheet(user.phone),
                         child: Text('Ubah', style: AppTypography.labelSmall.copyWith(color: AppColors.cobalt)),
                       ),
                     ],
@@ -606,33 +895,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    leading: const Icon(Icons.help_center_rounded, color: AppColors.cobalt),
+                    title: Text('Pusat Bantuan & Tanya Jawab', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
+                    onTap: _showFaqSheet,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.info_outline_rounded, color: AppColors.cobalt),
+                    title: Text('Tentang TemuKampus', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
+                    onTap: _showAboutAppSheet,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: const Icon(Icons.description_outlined, color: AppColors.cobalt),
                     title: Text('Syarat & Ketentuan', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
                     trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
-                    onTap: () => _showInfoDialog(
-                      'Syarat & Ketentuan',
-                      'TemuKampus adalah platform resmi civitas akademika Universitas Mercu Buana. Pengguna wajib menggunakan data akademik yang valid dan menjaga kerahasiaan tiket digital masing-masing.',
-                    ),
+                    onTap: _showAboutAppSheet,
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.cobalt),
                     title: Text('Kebijakan Privasi', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
                     trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
-                    onTap: () => _showInfoDialog(
-                      'Kebijakan Privasi',
-                      'Data NIM, Program Studi, dan Nomor WhatsApp hanya digunakan untuk keperluan verifikasi pendaftaran, penerbitan tiket, serta komunikasi kepanitiaan kegiatan kampus.',
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.help_outline_rounded, color: AppColors.cobalt),
-                    title: Text('Bantuan Kemahasiswaan', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
-                    onTap: () => _showInfoDialog(
-                      'Bantuan Kemahasiswaan',
-                      'Jika terdapat kendala pada tiket atau akun, silakan hubungi Biro Kemahasiswaan UMB Tower Lt. 2 atau kirim pesan WhatsApp ke Layanan Mahasiswa UMB.',
-                    ),
+                    onTap: _showAboutAppSheet,
                   ),
                 ],
               ),

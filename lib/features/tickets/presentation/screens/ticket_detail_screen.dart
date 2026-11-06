@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/status_pill.dart';
@@ -235,7 +236,14 @@ class TicketDetailScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            AppHaptics.light();
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.myTickets);
+            }
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -273,13 +281,20 @@ class TicketDetailScreen extends ConsumerWidget {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.ink, width: 1.4),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.ink, width: 1.6),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: AppColors.ink,
+                                offset: Offset(2.5, 2.5),
+                                blurRadius: 0,
+                              ),
+                            ],
                           ),
                           child: QrImageView(
                             data: ticket.ticketCode,
                             version: QrVersions.auto,
-                            size: 190.0,
+                            size: 200.0,
                             backgroundColor: Colors.white,
                             eyeStyle: const QrEyeStyle(
                               eyeShape: QrEyeShape.square,
@@ -312,18 +327,42 @@ class TicketDetailScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 10),
 
-                        Text(
-                          ticket.isCheckedIn
-                              ? 'Presensi Masuk Berhasil: ${AppFormatters.eventTime(ticket.checkedInAt!)}'
-                              : 'Tunjukkan kode QR ini ke panitia di pintu masuk.',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: ticket.isCheckedIn ? AppColors.mintText : AppColors.ink500,
-                            fontWeight: ticket.isCheckedIn ? FontWeight.w700 : FontWeight.w400,
-                            fontSize: 11,
+                        // Kotak Petunjuk QR Hari-H
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: ticket.isCheckedIn ? AppColors.mintLight : AppColors.paper,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: ticket.isCheckedIn ? AppColors.mint : AppColors.ink200,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                ticket.isCheckedIn ? Icons.verified_rounded : Icons.info_outline_rounded,
+                                size: 16,
+                                color: ticket.isCheckedIn ? AppColors.mintText : AppColors.ink500,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  ticket.isCheckedIn
+                                      ? 'Presensi Masuk Berhasil: ${AppFormatters.eventTime(ticket.checkedInAt!)}'
+                                      : 'Tunjukkan QR Code ini ke panitia di meja registrasi saat hari-H.',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: ticket.isCheckedIn ? AppColors.mintText : AppColors.ink700,
+                                    fontWeight: ticket.isCheckedIn ? FontWeight.w700 : FontWeight.w500,
+                                    fontSize: 11,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -418,14 +457,21 @@ class TicketDetailScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.signalLight,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.signal, width: 1.4),
+                  border: Border.all(color: AppColors.signal, width: 1.6),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.ink,
+                      offset: Offset(3, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: AppColors.signal, size: 20),
+                        const Icon(Icons.warning_amber_rounded, color: AppColors.signal, size: 22),
                         const SizedBox(width: 8),
                         Text(
                           'Bukti Pembayaran Perlu Revisi',
@@ -482,13 +528,37 @@ class TicketDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
 
                     if (ticket.unlockedAccess.waGroupUrl != null) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: StickerButton(
-                          label: 'Gabung Grup WhatsApp Peserta',
-                          variant: StickerButtonVariant.primary,
-                          icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 16),
-                          onPressed: () => _openUrl(context, ticket.unlockedAccess.waGroupUrl),
+                      GestureDetector(
+                        onTap: () => _openUrl(context, ticket.unlockedAccess.waGroupUrl),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF25D366), // Hijau Resmi WhatsApp
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.ink, width: 1.4),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: AppColors.ink,
+                                offset: Offset(2.5, 2.5),
+                                blurRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.chat_rounded, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Gabung Grup WhatsApp Peserta',
+                                style: AppTypography.label.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),

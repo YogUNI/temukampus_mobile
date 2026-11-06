@@ -40,9 +40,17 @@ class MainScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
 
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
+    return PopScope(
+      canPop: selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (selectedIndex != 0) {
+          context.go(AppRoutes.home);
+        }
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppColors.surface,
           border: Border(
@@ -92,8 +100,9 @@ class MainScaffold extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildNavItem({
     required BuildContext context,

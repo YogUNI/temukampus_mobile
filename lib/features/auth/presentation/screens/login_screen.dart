@@ -9,7 +9,14 @@ import '../controllers/auth_notifier.dart';
 import '../controllers/auth_state.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  final String? redirectUrl;
+  final String? loginReason;
+
+  const LoginScreen({
+    super.key,
+    this.redirectUrl,
+    this.loginReason,
+  });
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -47,7 +54,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } else if (authState.status == AuthStatus.needsEmailVerification) {
       context.go(AppRoutes.verifyEmail);
     } else if (success) {
-      context.go(AppRoutes.home);
+      if (widget.redirectUrl != null && widget.redirectUrl!.isNotEmpty) {
+        context.go(widget.redirectUrl!);
+      } else {
+        context.go(AppRoutes.home);
+      }
     }
   }
 
@@ -118,6 +129,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRoutes.home);
+              }
+            },
+          ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -127,6 +148,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Banner ajakan ramah jika dialihkan dari pendaftaran acara
+                  if (widget.loginReason == 'register' || widget.redirectUrl != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.cobaltLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cobalt, width: 1.4),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.ink,
+                            offset: Offset(2.5, 2.5),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.cobalt,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.login_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Perlu Masuk Akun',
+                                  style: AppTypography.titleSmall.copyWith(
+                                    color: AppColors.cobalt,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Silakan masuk terlebih dahulu untuk mendaftar acara ini.',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.ink700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // Logo TemuKampus Stiker Motif
                   Container(
                     width: 56,

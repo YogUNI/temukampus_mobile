@@ -42,11 +42,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
   ];
 
-  Future<void> _completeOnboarding() async {
+  Future<void> _completeToLogin() async {
     final cache = ref.read(localCacheServiceProvider);
     await cache.setHasSeenOnboarding(true);
     if (!mounted) return;
     context.go(AppRoutes.login);
+  }
+
+  Future<void> _exploreAsGuest() async {
+    final cache = ref.read(localCacheServiceProvider);
+    await cache.setHasSeenOnboarding(true);
+    if (!mounted) return;
+    context.go(AppRoutes.home);
   }
 
   @override
@@ -63,7 +70,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         backgroundColor: Colors.transparent,
         actions: [
           TextButton(
-            onPressed: _completeOnboarding,
+            onPressed: _exploreAsGuest,
             child: Text(
               'Lewati',
               style: AppTypography.label.copyWith(color: AppColors.ink500),
@@ -176,20 +183,40 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: _currentIndex == _items.length - 1
-                  ? StickerButton(
-                      label: 'Mulai Sekarang',
-                      variant: StickerButtonVariant.primary,
-                      onPressed: _completeOnboarding,
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: StickerButton(
+                            label: 'Masuk dengan Akun UMB',
+                            variant: StickerButtonVariant.primary,
+                            onPressed: _completeToLogin,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: StickerButton(
+                            label: 'Jelajahi Acara Dulu (Masuk Nanti)',
+                            variant: StickerButtonVariant.outline,
+                            onPressed: _exploreAsGuest,
+                          ),
+                        ),
+                      ],
                     )
-                  : StickerButton(
-                      label: 'Lanjutkan',
-                      variant: StickerButtonVariant.primary,
-                      onPressed: () {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
+                  : SizedBox(
+                      width: double.infinity,
+                      child: StickerButton(
+                        label: 'Lanjutkan',
+                        variant: StickerButtonVariant.primary,
+                        onPressed: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                      ),
                     ),
             ),
           ],

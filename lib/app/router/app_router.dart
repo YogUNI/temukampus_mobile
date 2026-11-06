@@ -20,6 +20,35 @@ import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
 import '../shell/main_scaffold.dart';
 import 'route_names.dart';
 
+CustomTransitionPage<void> _buildSlideTransition({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curvedAnimation = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.06, 0.0),
+          end: Offset.zero,
+        ).animate(curvedAnimation),
+        child: FadeTransition(
+          opacity: curvedAnimation,
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider.notifier);
 
@@ -30,13 +59,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authNotifierProvider);
       final location = state.uri.path;
 
-      final isSplash = location == AppRoutes.splash;
       final isOnboarding = location == AppRoutes.onboarding;
       final isLogin = location == AppRoutes.login;
       final isRegister = location == AppRoutes.register;
       final isVerifyEmail = location == AppRoutes.verifyEmail;
-
-      final isPublicRoute = isSplash || isOnboarding || isLogin || isRegister;
 
       // 1. Sedang memuat sesi awal
       if (authState.status == AuthStatus.initial || authState.status == AuthStatus.authenticating) {
@@ -48,17 +74,38 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isVerifyEmail ? null : AppRoutes.verifyEmail;
       }
 
-      // 3. User belum terotentikasi
+      // 3. User belum terotentikasi (Guest Mode vs Protected Routes)
       if (authState.status == AuthStatus.unauthenticated || authState.status == AuthStatus.suspended) {
-        if (!isPublicRoute) {
+        // Rute yang membutuhkan login wajib sebelum masuk
+        final isRegistrationRoute = location.endsWith('/register');
+        final isTicketDetailRoute = location.startsWith('/tickets/');
+        final isScannerRoute = location.startsWith('/scanner');
+
+        if (isRegistrationRoute) {
+          final encodedRedirect = Uri.encodeComponent(location);
+          return '${AppRoutes.login}?redirect=$encodedRedirect&reason=register';
+        }
+
+        if (isTicketDetailRoute) {
+          final encodedRedirect = Uri.encodeComponent(location);
+          return '${AppRoutes.login}?redirect=$encodedRedirect';
+        }
+
+        if (isScannerRoute) {
           return AppRoutes.login;
         }
+
+        // Rute publik lainnya (Home, Explore, Event Detail, Tabs) diizinkan dalam Mode Tamu (Guest)
         return null;
       }
 
       // 4. User sudah login aktif
       if (authState.status == AuthStatus.authenticated) {
         if (isLogin || isRegister || isOnboarding || isVerifyEmail) {
+          final redirect = state.uri.queryParameters['redirect'];
+          if (redirect != null && redirect.isNotEmpty) {
+            return Uri.decodeComponent(redirect);
+          }
           return AppRoutes.home;
         }
       }
@@ -73,53 +120,85 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const OnboardingScreen(),
+        ),
       ),
 
       // Auth Routes
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: LoginScreen(
+            redirectUrl: state.uri.queryParameters['redirect'] != null
+                ? Uri.decodeComponent(state.uri.queryParameters['redirect']!)
+                : null,
+            loginReason: state.uri.queryParameters['reason'],
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const RegisterScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.verifyEmail,
-        builder: (context, state) => const VerifyEmailScreen(),
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const VerifyEmailScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.eventDetail,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final slug = state.pathParameters['slug'] ?? '';
-          return EventDetailScreen(slug: slug);
+          return _buildSlideTransition(
+            state: state,
+            child: EventDetailScreen(slug: slug),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.eventRegister,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final slug = state.pathParameters['slug'] ?? '';
-          return RegistrationScreen(slug: slug);
+          return _buildSlideTransition(
+            state: state,
+            child: RegistrationScreen(slug: slug),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.ticketDetail,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final code = state.pathParameters['code'] ?? '';
-          return TicketDetailScreen(ticketCode: code);
+          return _buildSlideTransition(
+            state: state,
+            child: TicketDetailScreen(ticketCode: code),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.scannerSelectEvent,
-        builder: (context, state) => const EventGateSelectorScreen(),
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const EventGateSelectorScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.scannerGate,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final eventIdStr = state.pathParameters['eventId'] ?? '1';
           final eventId = int.tryParse(eventIdStr) ?? 1;
-          return ScannerScreen(eventId: eventId);
+          return _buildSlideTransition(
+            state: state,
+            child: ScannerScreen(eventId: eventId),
+          );
         },
       ),
 

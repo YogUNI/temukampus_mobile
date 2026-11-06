@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
@@ -60,7 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Row(
                           children: [
                             Text(
-                              'Halo, ${user?.name.split(' ').first ?? 'Mahasiswa'}!',
+                              user != null ? 'Halo, ${user.name.split(' ').first}!' : 'Halo, Kawan Kampus!',
                               style: AppTypography.hero.copyWith(fontSize: 22),
                             ),
                             const SizedBox(width: 6),
@@ -83,7 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            user?.academicSummary ?? "Teknik Informatika '24",
+                            user?.academicSummary ?? 'Mode Tamu (Eksplorasi)',
                             style: AppTypography.badge.copyWith(color: AppColors.cobalt),
                           ),
                         ),
@@ -108,6 +109,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ],
                 ),
+
+                // Banner Ajakan Masuk Jika Mode Tamu
+                if (user == null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.cobaltLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.cobalt, width: 1.4),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.ink,
+                          offset: Offset(2.5, 2.5),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.cobalt,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.badge_rounded, color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mode Tamu Aktif',
+                                style: AppTypography.titleSmall.copyWith(
+                                  fontSize: 13,
+                                  color: AppColors.cobalt,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                'Masuk untuk daftar acara & simpan tiketmu.',
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontSize: 11,
+                                  color: AppColors.ink700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        StickerButton(
+                          label: 'Masuk',
+                          variant: StickerButtonVariant.primary,
+                          onPressed: () {
+                            AppHaptics.selection();
+                            context.push(AppRoutes.login);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
 
                 // 2. Search Bar Ticket Motif
@@ -177,37 +242,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
                 ] else ...[
-                  // Section Khusus Untuk Jurusanmu
-                  if (user?.isUmbStudent ?? true) ...[
-                    Row(
-                      children: [
-                        Text('Khusus Untuk Jurusanmu', style: AppTypography.titleMedium),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.signalLight,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'PRODI PILIHAN',
-                            style: AppTypography.badge.copyWith(color: AppColors.ink, fontSize: 9),
-                          ),
+                  // Section Rekomendasi Khusus / Populer
+                  Row(
+                    children: [
+                      Text(
+                        user?.isUmbStudent == true ? 'Khusus Untuk Jurusanmu' : 'Rekomendasi Acara Kampus',
+                        style: AppTypography.titleMedium,
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.signalLight,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    ...catalogState.events
-                        .take(2)
-                        .map((event) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: EventTicketCard(
-                                event: event,
-                                onTap: () => context.push(AppRoutes.eventDetailPath(event.slug)),
-                              ),
-                            )),
-                    const SizedBox(height: 16),
-                  ],
+                        child: Text(
+                          user?.isUmbStudent == true ? 'PRODI PILIHAN' : 'POPULER DI KAMPUS',
+                          style: AppTypography.badge.copyWith(color: AppColors.ink, fontSize: 9),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ...catalogState.events
+                      .take(2)
+                      .map((event) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: EventTicketCard(
+                              event: event,
+                              onTap: () => context.push(AppRoutes.eventDetailPath(event.slug)),
+                            ),
+                          )),
+                  const SizedBox(height: 16),
 
                   // Section Segera Berlangsung
                   Row(

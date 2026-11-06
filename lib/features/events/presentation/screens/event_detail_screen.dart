@@ -18,6 +18,87 @@ class EventDetailScreen extends ConsumerWidget {
 
   const EventDetailScreen({super.key, required this.slug});
 
+  void _showGuestLoginSheet(BuildContext context, EventModel event) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.ink200,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.cobaltLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.cobalt, width: 1.5),
+                  ),
+                  child: const Icon(Icons.login_rounded, color: AppColors.cobalt, size: 26),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Masuk untuk Mendaftar',
+                  style: AppTypography.titleMedium.copyWith(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Untuk mendaftar acara "${event.title}", silakan masuk dengan akun mahasiswa UMB atau buat akun baru.',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.ink500, height: 1.4),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: StickerButton(
+                    label: 'Masuk Sekarang',
+                    variant: StickerButtonVariant.primary,
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      final encodedRedirect = Uri.encodeComponent(AppRoutes.eventRegisterPath(event.slug));
+                      context.push('${AppRoutes.login}?redirect=$encodedRedirect&reason=register');
+                    },
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: StickerButton(
+                    label: 'Daftar Akun Baru',
+                    variant: StickerButtonVariant.outline,
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.push(AppRoutes.register);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailState = ref.watch(eventDetailControllerProvider(slug));
@@ -98,7 +179,11 @@ class EventDetailScreen extends ConsumerWidget {
                   ),
                   onPressed: () {
                     AppHaptics.light();
-                    context.pop();
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go(AppRoutes.home);
+                    }
                   },
                 ),
                 actions: [
@@ -192,6 +277,31 @@ class EventDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Banner Mode Tamu jika belum login
+                      if (authState.user == null) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.cobaltLight,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline_rounded, color: AppColors.cobalt, size: 18),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Mode Tamu: Masuk dengan akun mahasiswa UMB untuk mendaftar & klaim tiket acara ini.',
+                                  style: AppTypography.bodySmall.copyWith(color: AppColors.ink, fontSize: 11),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       // Ormawa Host & Format Badge
                       Row(
                         children: [
@@ -554,7 +664,7 @@ class EventDetailScreen extends ConsumerWidget {
           variant: StickerButtonVariant.primary,
           onPressed: () {
             AppHaptics.selection();
-            context.push(AppRoutes.login);
+            _showGuestLoginSheet(context, event);
           },
         );
         break;

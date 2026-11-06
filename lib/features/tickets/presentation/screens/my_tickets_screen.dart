@@ -5,9 +5,11 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/status_pill.dart';
+import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../controllers/tickets_controller.dart';
 import '../../data/models/ticket_model.dart';
 
@@ -28,7 +30,67 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
     final ticketsState = ref.watch(ticketsControllerProvider);
+
+    // Mode Tamu (Guest)
+    if (authState.user == null) {
+      return Scaffold(
+        backgroundColor: AppColors.paper,
+        appBar: AppBar(
+          title: Text('Tiket Saya', style: AppTypography.titleMedium),
+          elevation: 0,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TicketContainer(
+                  width: 80,
+                  height: 80,
+                  punchRadius: 10.0,
+                  punchPositionPercent: 0.5,
+                  borderColor: AppColors.ink,
+                  borderWidth: 1.6,
+                  hasShadow: true,
+                  shadowOffset: const Offset(3, 3),
+                  child: const Center(
+                    child: Icon(Icons.confirmation_number_outlined, size: 40, color: AppColors.cobalt),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'Masuk untuk Melihat Tiketmu',
+                  style: AppTypography.hero.copyWith(fontSize: 20),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Masuk dengan akun mahasiswa UMB untuk melihat tiket dan riwayat pendaftaranmu.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.ink500, height: 1.4),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 220,
+                  child: StickerButton(
+                    label: 'Masuk ke Akun',
+                    variant: StickerButtonVariant.primary,
+                    icon: const Icon(Icons.login_rounded, color: Colors.white, size: 18),
+                    onPressed: () {
+                      AppHaptics.selection();
+                      context.push(AppRoutes.login);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -130,6 +192,31 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     }
 
     if (state.isEmpty) {
+      String title;
+      String message;
+      String buttonLabel = 'Jelajah Acara';
+
+      switch (state.activeTab) {
+        case 'pending':
+          title = 'Belum Ada Tiket Menunggu Verifikasi';
+          message = 'Belum ada tiket yang menunggu verifikasi. Cari acara seru lainnya yuk!';
+          break;
+        case 'completed':
+          title = 'Belum Ada Tiket Selesai';
+          message = 'Belum ada riwayat acara yang selesai.';
+          break;
+        case 'cancelled':
+          title = 'Tidak Ada Tiket Dibatalkan';
+          message = 'Tidak ada tiket yang dibatalkan.';
+          break;
+        case 'upcoming':
+        default:
+          title = 'Belum Ada Tiket Mendatang';
+          message = 'Belum ada tiket acara mendatang. Temukan seminar & workshop kampus!';
+          buttonLabel = 'Cari Acara';
+          break;
+      }
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
@@ -137,24 +224,37 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TicketContainer(
-                width: 72,
-                height: 72,
+                width: 76,
+                height: 76,
                 punchRadius: 8.0,
                 borderColor: AppColors.ink,
                 borderWidth: 1.5,
                 hasShadow: true,
                 shadowOffset: const Offset(2.5, 2.5),
                 child: const Center(
-                  child: Icon(Icons.confirmation_number_outlined, size: 36, color: AppColors.ink400),
+                  child: Icon(Icons.confirmation_number_outlined, size: 38, color: AppColors.ink400),
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Belum Ada Tiket di Kategori Ini', style: AppTypography.titleMedium.copyWith(fontSize: 16)),
+              Text(title, style: AppTypography.titleMedium.copyWith(fontSize: 16), textAlign: TextAlign.center),
               const SizedBox(height: 6),
               Text(
-                'Tiket acara yang Anda daftarkan akan muncul di sini secara otomatis.',
+                message,
                 textAlign: TextAlign.center,
                 style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: 180,
+                child: StickerButton(
+                  label: buttonLabel,
+                  variant: StickerButtonVariant.outline,
+                  icon: const Icon(Icons.explore_rounded, size: 16, color: AppColors.ink),
+                  onPressed: () {
+                    AppHaptics.selection();
+                    context.go(AppRoutes.explore);
+                  },
+                ),
               ),
             ],
           ),

@@ -128,95 +128,217 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     );
   }
 
-  void _showSuccessDialog(String ticketCode, bool isPaid) {
-    AppHaptics.success();
+  void _showProofFullScreen(BuildContext context, Uint8List bytes, String fileName) {
+    AppHaptics.light();
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) {
+      builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: TicketContainer(
-            punchRadius: 14.0,
-            punchPositionPercent: 0.68,
-            borderRadius: 16.0,
-            borderColor: AppColors.ink,
-            borderWidth: 1.5,
-            hasShadow: true,
-            shadowOffset: const Offset(3, 3),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      color: AppColors.mintLight,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.check_circle_rounded, color: AppColors.mint, size: 36),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.ink,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.ink, width: 2),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, offset: Offset(0, 8), blurRadius: 16),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Pratinjau Bukti: $fileName',
+                          style: AppTypography.titleSmall.copyWith(color: Colors.white, fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text('Pendaftaran Berhasil!', style: AppTypography.titleMedium.copyWith(fontSize: 18)),
-                  const SizedBox(height: 6),
-                  Text(
-                    isPaid
-                        ? 'Bukti transfer Anda telah diterima dan sedang menunggu verifikasi panitia (maksimal 1x24 jam).'
-                        : 'Selamat! Pendaftaran Anda telah terkonfirmasi otomatis.',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
-                  ),
-                  const SizedBox(height: 16),
-                  const DottedTearLine(color: AppColors.ink200),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.paper,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.ink200),
+                ),
+                const Divider(color: AppColors.ink700, height: 1),
+                Flexible(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+                    child: InteractiveViewer(
+                      minScale: 0.8,
+                      maxScale: 4.0,
+                      child: Image.memory(
+                        bytes,
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    child: Column(
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(14)),
+                  ),
+                  child: Text(
+                    'Cubit / Zoom foto untuk memeriksa kejelasan tulisan struk',
+                    style: AppTypography.bodySmall.copyWith(fontSize: 11, color: AppColors.ink500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog(String ticketCode, bool isPaid) {
+    AppHaptics.success();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Animasi / Ikon Centang Hijau Besar Motif Selebrasi
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.mintLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.mint, width: 2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.ink,
+                        offset: Offset(3, 3),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.check_rounded, color: AppColors.mintText, size: 44),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Pendaftaran Berhasil Dikirim!',
+                  style: AppTypography.hero.copyWith(fontSize: 22),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isPaid
+                      ? 'Panitia akan memverifikasi bukti transfermu maksimal 1x24 jam.'
+                      : 'Selamat! Pendaftaranmu terkonfirmasi otomatis.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.ink500),
+                ),
+                const SizedBox(height: 20),
+
+                // Kartu Tiket Notch Motif
+                TicketContainer(
+                  punchRadius: 10.0,
+                  punchPositionPercent: 0.5,
+                  borderRadius: 14.0,
+                  borderColor: AppColors.ink,
+                  borderWidth: 1.4,
+                  hasShadow: true,
+                  shadowOffset: const Offset(2.5, 2.5),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('KODE TIKET RESMI', style: AppTypography.labelSmall.copyWith(fontSize: 10, color: AppColors.ink400)),
-                        const SizedBox(height: 2),
-                        Text(
-                          ticketCode,
-                          style: AppTypography.numericCode.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                            color: AppColors.cobalt,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'KODE TIKET RESMI',
+                              style: AppTypography.labelSmall.copyWith(fontSize: 9, color: AppColors.ink400),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              ticketCode,
+                              style: AppTypography.numericCode.copyWith(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.cobalt,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isPaid ? AppColors.amberLight : AppColors.mintLight,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isPaid ? AppColors.amber : AppColors.mint,
+                            ),
+                          ),
+                          child: Text(
+                            isPaid ? 'MENUNGGU VERIFIKASI' : 'TERKONFIRMASI',
+                            style: AppTypography.badge.copyWith(
+                              color: isPaid ? AppColors.warningText : AppColors.mintText,
+                              fontSize: 9,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: StickerButton(
-                      label: 'Lihat Tiket Saya',
-                      variant: StickerButtonVariant.primary,
-                      onPressed: () {
-                        Navigator.pop(context);
-                        context.go(AppRoutes.myTickets);
-                      },
-                    ),
+                ),
+                const SizedBox(height: 24),
+
+                // Dua Tombol Aksi Jelas
+                SizedBox(
+                  width: double.infinity,
+                  child: StickerButton(
+                    label: 'Lihat Tiket Saya',
+                    variant: StickerButtonVariant.primary,
+                    icon: const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 18),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.push(AppRoutes.ticketDetailPath(ticketCode));
+                    },
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: StickerButton(
+                    label: 'Kembali ke Beranda',
+                    variant: StickerButtonVariant.outline,
                     onPressed: () {
                       Navigator.pop(context);
                       context.go(AppRoutes.home);
                     },
-                    child: Text('Kembali ke Beranda', style: AppTypography.labelSmall.copyWith(color: AppColors.ink500)),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -239,6 +361,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       appBar: AppBar(
         title: Text('Formulir Pendaftaran', style: AppTypography.titleMedium),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+          onPressed: () {
+            AppHaptics.light();
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.eventDetailPath(widget.slug));
+            }
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -405,7 +538,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.ink),
                           onPressed: () {
                             final nominal = regState.paymentPreview?.totalAmountDue.toString() ?? '25137';
-                            _copyToClipboard(nominal, 'Nominal $nominal disalin!');
+                            _copyToClipboard(nominal, 'Nominal berhasil disalin!');
                           },
                         ),
                       ],
@@ -476,7 +609,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           icon: const Icon(Icons.copy_rounded, color: AppColors.cobalt),
                           onPressed: () {
                             final acc = regState.paymentPreview?.accountNumber ?? event?.bankAccountNumber ?? '5410982311';
-                            _copyToClipboard(acc, 'Nomor rekening $acc disalin!');
+                            _copyToClipboard(acc, 'Nomor rekening berhasil disalin!');
                           },
                         ),
                       ],
@@ -535,42 +668,70 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   ),
                   child: Row(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.memory(
+                      GestureDetector(
+                        onTap: () => _showProofFullScreen(
+                          context,
                           regState.selectedProof!.bytes,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
+                          regState.selectedProof!.fileName,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(
+                                regState.selectedProof!.bytes,
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 24),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.check_circle_rounded, color: AppColors.mint, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Bukti Siap Diunggah',
-                                  style: AppTypography.titleSmall.copyWith(color: AppColors.mintText, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              regState.selectedProof!.fileName,
-                              style: AppTypography.bodySmall.copyWith(fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              regState.selectedProof!.formattedSize,
-                              style: AppTypography.numericCode.copyWith(fontSize: 10, color: AppColors.ink500),
-                            ),
-                          ],
+                        child: GestureDetector(
+                          onTap: () => _showProofFullScreen(
+                            context,
+                            regState.selectedProof!.bytes,
+                            regState.selectedProof!.fileName,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, color: AppColors.mint, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Bukti Siap Diunggah',
+                                    style: AppTypography.titleSmall.copyWith(color: AppColors.mintText, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                regState.selectedProof!.fileName,
+                                style: AppTypography.bodySmall.copyWith(fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                '${regState.selectedProof!.formattedSize} • Ketuk untuk perbesar',
+                                style: AppTypography.numericCode.copyWith(fontSize: 10, color: AppColors.cobalt),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       TextButton(
