@@ -163,7 +163,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             const SizedBox(height: 8),
             FilterChipBar(
               items: categoryNames,
-              selectedIndex: selectedCategoryIndex >= 0 ? selectedCategoryIndex : 0,
+              activeIndexes: {selectedCategoryIndex >= 0 ? selectedCategoryIndex : 0},
               onSelected: (index) {
                 final slug = categorySlugs[index];
                 ref.read(eventsCatalogControllerProvider.notifier).setCategory(slug);

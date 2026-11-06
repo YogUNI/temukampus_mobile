@@ -25,12 +25,12 @@ class AppRadii {
   /// Dock navigasi, search bar pill, tombol kapsul.
   static const double pill = 999;
 
-  static BorderRadius get borderXs => BorderRadius.circular(xs);
-  static BorderRadius get borderSm => BorderRadius.circular(sm);
-  static BorderRadius get borderMd => BorderRadius.circular(md);
-  static BorderRadius get borderLg => BorderRadius.circular(lg);
-  static BorderRadius get borderXl => BorderRadius.circular(xl);
-  static BorderRadius get borderPill => BorderRadius.circular(pill);
+  static const BorderRadius borderXs = BorderRadius.all(Radius.circular(xs));
+  static const BorderRadius borderSm = BorderRadius.all(Radius.circular(sm));
+  static const BorderRadius borderMd = BorderRadius.all(Radius.circular(md));
+  static const BorderRadius borderLg = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius borderXl = BorderRadius.all(Radius.circular(xl));
+  static const BorderRadius borderPill = BorderRadius.all(Radius.circular(pill));
 
   /// Sheet yang menempel ke bawah layar.
   static const BorderRadius sheetTop =
