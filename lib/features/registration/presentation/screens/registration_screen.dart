@@ -534,6 +534,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                         ),
                         StickerButton(
                           label: 'Salin',
+                          fullWidth: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           variant: StickerButtonVariant.outline,
                           icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.ink),
                           onPressed: () {

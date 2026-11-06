@@ -163,6 +163,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(width: 8),
                         StickerButton(
                           label: 'Masuk',
+                          fullWidth: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                           variant: StickerButtonVariant.primary,
                           onPressed: () {
                             AppHaptics.selection();
