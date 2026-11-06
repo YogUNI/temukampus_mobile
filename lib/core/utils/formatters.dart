@@ -31,6 +31,19 @@ class AppFormatters {
     return "+ Rp $code";
   }
 
+  /// Format harga ringkas, misal: 50000 -> "Rp 50rb", 1500000 -> "Rp 1,5jt".
+  static String compactRupiah(num amount) {
+    if (amount >= 1000000) {
+      final value = (amount / 1000000).toStringAsFixed(1).replaceAll('.0', '');
+      return 'Rp ${value}jt';
+    }
+    if (amount >= 1000) {
+      final value = (amount / 1000).toStringAsFixed(0);
+      return 'Rp ${value}rb';
+    }
+    return 'Rp $amount';
+  }
+
   /// Format tanggal ramah mahasiswa, misal: "Jumat, 20 Nov 2026"
   static String eventDate(DateTime dateTime) {
     try {

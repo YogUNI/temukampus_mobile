@@ -2,12 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/event_model.dart';
 import '../../data/repositories/events_repository.dart';
 
+/// Mode tampilan katalog: Grid 2-kolom vs daftar tiket vertikal.
+enum CatalogViewMode { grid, list }
+
 class EventsCatalogState {
   final bool isLoading;
   final String? errorMessage;
   final List<EventModel> events;
   final List<CategoryModel> categories;
   final EventFilterModel filter;
+  final CatalogViewMode viewMode;
 
   const EventsCatalogState({
     this.isLoading = false,
@@ -15,6 +19,7 @@ class EventsCatalogState {
     this.events = const [],
     this.categories = const [],
     this.filter = const EventFilterModel(),
+    this.viewMode = CatalogViewMode.grid,
   });
 
   // Convenience getters
@@ -25,6 +30,8 @@ class EventsCatalogState {
   bool get suitableForMe => filter.suitableForMeOnly;
   bool get onlyFree => filter.isFreeOnly;
   bool get onlySkp => filter.isSkpOnly;
+  int? get maxPrice => filter.maxPrice;
+  List<String> get organizationSlugs => filter.organizationSlugs;
 
   bool get isEmpty => !isLoading && errorMessage == null && events.isEmpty;
   bool get hasActiveFilter => filter.hasActiveFilter;
@@ -35,6 +42,7 @@ class EventsCatalogState {
     List<EventModel>? events,
     List<CategoryModel>? categories,
     EventFilterModel? filter,
+    CatalogViewMode? viewMode,
     String? searchQuery,
     String? selectedCategory,
     String? selectedFormat,
@@ -42,8 +50,11 @@ class EventsCatalogState {
     bool? suitableForMe,
     bool? onlyFree,
     bool? onlySkp,
+    int? maxPrice,
+    List<String>? organizationSlugs,
     bool clearFormat = false,
     bool clearTag = false,
+    bool clearMaxPrice = false,
   }) {
     EventFilterModel updatedFilter = filter ?? this.filter;
 
@@ -54,8 +65,11 @@ class EventsCatalogState {
         suitableForMe != null ||
         onlyFree != null ||
         onlySkp != null ||
+        maxPrice != null ||
+        organizationSlugs != null ||
         clearFormat ||
-        clearTag) {
+        clearTag ||
+        clearMaxPrice) {
       updatedFilter = updatedFilter.copyWith(
         searchQuery: searchQuery,
         categorySlug: selectedCategory == 'all' ? null : (selectedCategory ?? updatedFilter.categorySlug),
@@ -64,9 +78,12 @@ class EventsCatalogState {
         suitableForMeOnly: suitableForMe,
         isFreeOnly: onlyFree,
         isSkpOnly: onlySkp,
+        maxPrice: maxPrice,
+        organizationSlugs: organizationSlugs,
         clearFormat: clearFormat,
         clearTag: clearTag,
         clearCategory: selectedCategory == 'all',
+        clearMaxPrice: clearMaxPrice,
       );
     }
 
@@ -76,6 +93,7 @@ class EventsCatalogState {
       events: events ?? this.events,
       categories: categories ?? this.categories,
       filter: updatedFilter,
+      viewMode: viewMode ?? this.viewMode,
     );
   }
 }
@@ -111,12 +129,23 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
     try {
       var events = await _repository.getEvents(filterModel: state.filter);
 
-      // Filter sisi klien tambahan jika diperlukan
+      // Filter sisi klien tambahan yang belum tersedia di API katalog.
       if (state.filter.isFreeOnly) {
         events = events.where((e) => e.isFree).toList();
       }
       if (state.filter.isSkpOnly) {
         events = events.where((e) => e.hasSkp).toList();
+      }
+      final maxPrice = state.filter.maxPrice;
+      if (maxPrice != null) {
+        events = events
+            .where((e) => e.isFree || e.price <= maxPrice)
+            .toList();
+      }
+      if (state.filter.organizationSlugs.isNotEmpty) {
+        events = events
+            .where((e) => state.filter.organizationSlugs.contains(e.organization.slug))
+            .toList();
       }
 
       state = state.copyWith(isLoading: false, events: events);
@@ -150,6 +179,8 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
           suitableForMe: false,
           clearFormat: true,
           clearTag: true,
+          clearMaxPrice: true,
+          organizationSlugs: const [],
         );
         break;
       case 'Gratis':
@@ -176,6 +207,8 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
     required bool onlyFree,
     required bool onlySkp,
     required bool suitableForMe,
+    int? maxPrice,
+    List<String> organizationSlugs = const [],
   }) {
     state = state.copyWith(
       selectedFormat: format,
@@ -183,8 +216,20 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
       onlyFree: onlyFree,
       onlySkp: onlySkp,
       suitableForMe: suitableForMe,
+      maxPrice: maxPrice,
+      organizationSlugs: organizationSlugs,
+      clearMaxPrice: maxPrice == null,
     );
     fetchEvents();
+  }
+
+  /// Beralih tampilan Grid ⇄ List (bertahan selama sesi katalog).
+  void toggleViewMode() {
+    state = state.copyWith(
+      viewMode: state.viewMode == CatalogViewMode.grid
+          ? CatalogViewMode.list
+          : CatalogViewMode.grid,
+    );
   }
 
   void resetFilters() {
@@ -192,6 +237,8 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
       selectedCategory: 'all',
       clearFormat: true,
       clearTag: true,
+      clearMaxPrice: true,
+      organizationSlugs: const [],
       onlyFree: false,
       onlySkp: false,
       suitableForMe: false,

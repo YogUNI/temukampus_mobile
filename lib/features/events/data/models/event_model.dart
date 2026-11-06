@@ -234,6 +234,13 @@ class EventFilterModel {
   final bool isFreeOnly;
   final bool suitableForMeOnly;
   final bool isSkpOnly;
+
+  /// Batas atas harga tiket berbayar (Rp). `null` = tidak ada batas.
+  final int? maxPrice;
+
+  /// Slug ormawa yang diizinkan. Kosong = semua ormawa.
+  final List<String> organizationSlugs;
+
   final int page;
 
   const EventFilterModel({
@@ -244,6 +251,8 @@ class EventFilterModel {
     this.isFreeOnly = false,
     this.suitableForMeOnly = false,
     this.isSkpOnly = false,
+    this.maxPrice,
+    this.organizationSlugs = const [],
     this.page = 1,
   });
 
@@ -253,7 +262,9 @@ class EventFilterModel {
       tag != null ||
       isFreeOnly ||
       suitableForMeOnly ||
-      isSkpOnly;
+      isSkpOnly ||
+      maxPrice != null ||
+      organizationSlugs.isNotEmpty;
 
   EventFilterModel copyWith({
     String? searchQuery,
@@ -263,10 +274,13 @@ class EventFilterModel {
     bool? isFreeOnly,
     bool? suitableForMeOnly,
     bool? isSkpOnly,
+    int? maxPrice,
+    List<String>? organizationSlugs,
     int? page,
     bool clearCategory = false,
     bool clearFormat = false,
     bool clearTag = false,
+    bool clearMaxPrice = false,
   }) {
     return EventFilterModel(
       searchQuery: searchQuery ?? this.searchQuery,
@@ -276,6 +290,9 @@ class EventFilterModel {
       isFreeOnly: isFreeOnly ?? this.isFreeOnly,
       suitableForMeOnly: suitableForMeOnly ?? this.suitableForMeOnly,
       isSkpOnly: isSkpOnly ?? this.isSkpOnly,
+      maxPrice:
+          clearMaxPrice ? null : (maxPrice ?? this.maxPrice),
+      organizationSlugs: organizationSlugs ?? this.organizationSlugs,
       page: page ?? this.page,
     );
   }
