@@ -137,11 +137,14 @@ class TicketContainer extends StatelessWidget {
   final double borderRadius;
   final bool hasShadow;
   final Offset shadowOffset;
+  final double? width;
+  final double? height;
 
   const TicketContainer({
     super.key,
     required this.child,
-    this.backgroundColor = AppColors.surface,
+    Color? color,
+    Color? backgroundColor,
     this.borderColor = AppColors.ink200,
     this.borderWidth = 1.2,
     this.punchRadius = 12.0,
@@ -149,11 +152,13 @@ class TicketContainer extends StatelessWidget {
     this.borderRadius = 16.0,
     this.hasShadow = true,
     this.shadowOffset = const Offset(3, 3),
-  });
+    this.width,
+    this.height,
+  }) : backgroundColor = color ?? backgroundColor ?? AppColors.surface;
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
+    Widget content = CustomPaint(
       painter: _TicketShadowAndBorderPainter(
         punchRadius: punchRadius,
         punchPositionPercent: punchPositionPercent,
@@ -173,6 +178,16 @@ class TicketContainer extends StatelessWidget {
         child: child,
       ),
     );
+
+    if (width != null || height != null) {
+      content = SizedBox(
+        width: width,
+        height: height,
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
 

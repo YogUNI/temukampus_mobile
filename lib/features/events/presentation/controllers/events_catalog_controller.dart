@@ -6,43 +6,35 @@ class EventsCatalogState {
   final bool isLoading;
   final String? errorMessage;
   final List<EventModel> events;
-  final List<EventCategoryModel> categories;
-  final String searchQuery;
-  final String selectedCategory; // 'all' atau slug kategori
-  final String? selectedFormat; // null, 'offline', 'online', 'hybrid'
-  final String? selectedTag; // 'gratis', 'skp', etc.
-  final bool suitableForMe;
-  final bool onlyFree;
-  final bool onlySkp;
+  final List<CategoryModel> categories;
+  final EventFilterModel filter;
 
   const EventsCatalogState({
     this.isLoading = false,
     this.errorMessage,
     this.events = const [],
     this.categories = const [],
-    this.searchQuery = '',
-    this.selectedCategory = 'all',
-    this.selectedFormat,
-    this.selectedTag,
-    this.suitableForMe = false,
-    this.onlyFree = false,
-    this.onlySkp = false,
+    this.filter = const EventFilterModel(),
   });
 
+  // Convenience getters
+  String get searchQuery => filter.searchQuery;
+  String get selectedCategory => filter.categorySlug ?? 'all';
+  String? get selectedFormat => filter.format;
+  String? get selectedTag => filter.tag;
+  bool get suitableForMe => filter.suitableForMeOnly;
+  bool get onlyFree => filter.isFreeOnly;
+  bool get onlySkp => filter.isSkpOnly;
+
   bool get isEmpty => !isLoading && errorMessage == null && events.isEmpty;
-  bool get hasActiveFilter =>
-      selectedCategory != 'all' ||
-      selectedFormat != null ||
-      selectedTag != null ||
-      suitableForMe ||
-      onlyFree ||
-      onlySkp;
+  bool get hasActiveFilter => filter.hasActiveFilter;
 
   EventsCatalogState copyWith({
     bool? isLoading,
     String? errorMessage,
     List<EventModel>? events,
-    List<EventCategoryModel>? categories,
+    List<CategoryModel>? categories,
+    EventFilterModel? filter,
     String? searchQuery,
     String? selectedCategory,
     String? selectedFormat,
@@ -53,18 +45,37 @@ class EventsCatalogState {
     bool clearFormat = false,
     bool clearTag = false,
   }) {
+    EventFilterModel updatedFilter = filter ?? this.filter;
+
+    if (searchQuery != null ||
+        selectedCategory != null ||
+        selectedFormat != null ||
+        selectedTag != null ||
+        suitableForMe != null ||
+        onlyFree != null ||
+        onlySkp != null ||
+        clearFormat ||
+        clearTag) {
+      updatedFilter = updatedFilter.copyWith(
+        searchQuery: searchQuery,
+        categorySlug: selectedCategory == 'all' ? null : (selectedCategory ?? updatedFilter.categorySlug),
+        format: selectedFormat,
+        tag: selectedTag,
+        suitableForMeOnly: suitableForMe,
+        isFreeOnly: onlyFree,
+        isSkpOnly: onlySkp,
+        clearFormat: clearFormat,
+        clearTag: clearTag,
+        clearCategory: selectedCategory == 'all',
+      );
+    }
+
     return EventsCatalogState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       events: events ?? this.events,
       categories: categories ?? this.categories,
-      searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
-      selectedFormat: clearFormat ? null : (selectedFormat ?? this.selectedFormat),
-      selectedTag: clearTag ? null : (selectedTag ?? this.selectedTag),
-      suitableForMe: suitableForMe ?? this.suitableForMe,
-      onlyFree: onlyFree ?? this.onlyFree,
-      onlySkp: onlySkp ?? this.onlySkp,
+      filter: updatedFilter,
     );
   }
 }
@@ -98,19 +109,13 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      var events = await _repository.getEvents(
-        search: state.searchQuery,
-        category: state.selectedCategory == 'all' ? null : state.selectedCategory,
-        format: state.selectedFormat,
-        tag: state.selectedTag,
-        suitableForMe: state.suitableForMe,
-      );
+      var events = await _repository.getEvents(filterModel: state.filter);
 
       // Filter sisi klien tambahan jika diperlukan
-      if (state.onlyFree) {
+      if (state.filter.isFreeOnly) {
         events = events.where((e) => e.isFree).toList();
       }
-      if (state.onlySkp) {
+      if (state.filter.isSkpOnly) {
         events = events.where((e) => e.hasSkp).toList();
       }
 
@@ -124,7 +129,7 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
   }
 
   void setSearchQuery(String query) {
-    if (state.searchQuery == query) return;
+    if (state.filter.searchQuery == query) return;
     state = state.copyWith(searchQuery: query);
     fetchEvents();
   }

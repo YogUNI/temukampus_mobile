@@ -28,12 +28,14 @@ void main() {
     test('Pencarian kata kunci menyaring acara yang relevan', () async {
       await controller.init();
 
-      controller.setSearchQuery('Flutter');
+      controller.setSearchQuery('Cyber');
       await controller.fetchEvents();
 
-      expect(controller.state.searchQuery, equals('Flutter'));
+      expect(controller.state.searchQuery, equals('Cyber'));
       expect(
-        controller.state.events.every((e) => e.title.toLowerCase().contains('flutter')),
+        controller.state.events.every((e) =>
+            e.title.toLowerCase().contains('cyber') ||
+            e.summary.toLowerCase().contains('cyber')),
         isTrue,
       );
     });
@@ -52,7 +54,7 @@ void main() {
       await controller.init();
 
       controller.setQuickFilterTag('Gratis');
-      controller.setSearchQuery('Flutter');
+      controller.setSearchQuery('Cyber');
       expect(controller.state.hasActiveFilter, isTrue);
 
       controller.resetFilters();

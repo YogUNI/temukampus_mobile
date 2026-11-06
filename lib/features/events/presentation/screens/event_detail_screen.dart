@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../data/models/event_model.dart';
 import '../controllers/event_detail_controller.dart';
+import '../widgets/quota_progress_bar.dart';
 
 class EventDetailScreen extends ConsumerWidget {
   final String slug;
@@ -48,7 +51,10 @@ class EventDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => ref.read(eventDetailControllerProvider(slug).notifier).loadDetail(),
+                  onPressed: () {
+                    AppHaptics.selection();
+                    ref.read(eventDetailControllerProvider(slug).notifier).loadDetail();
+                  },
                   child: const Text('Coba Lagi'),
                 ),
               ],
@@ -60,7 +66,14 @@ class EventDetailScreen extends ConsumerWidget {
 
     final detail = detailState.detail!;
     final event = detail.event;
-    final eligibility = detailState.eligibility;
+
+    // Hitung status CTA menggunakan kalkulator 11-state ketat (PRD §7.4.1)
+    final ctaResult = EventCtaCalculator.calculate(
+      event: event,
+      user: authState.user,
+      hasActiveTicket: detail.hasUserRegistered,
+      activeTicketCode: detail.userTicketCode,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -69,9 +82,9 @@ class EventDetailScreen extends ConsumerWidget {
           // Content Scroll
           CustomScrollView(
             slivers: [
-              // 1. Poster Header with Gradient
+              // 1. Poster Header Full-Bleed with Gradient
               SliverAppBar(
-                expandedHeight: 240,
+                expandedHeight: 250,
                 pinned: true,
                 backgroundColor: AppColors.ink,
                 leading: IconButton(
@@ -83,7 +96,10 @@ class EventDetailScreen extends ConsumerWidget {
                     ),
                     child: const Icon(Icons.arrow_back_rounded, color: AppColors.ink, size: 18),
                   ),
-                  onPressed: () => context.pop(),
+                  onPressed: () {
+                    AppHaptics.light();
+                    context.pop();
+                  },
                 ),
                 actions: [
                   IconButton(
@@ -96,9 +112,19 @@ class EventDetailScreen extends ConsumerWidget {
                       child: const Icon(Icons.share_rounded, color: AppColors.ink, size: 18),
                     ),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Tautan acara "${event.title}" disalin!')),
-                      );
+                      AppHaptics.light();
+                      try {
+                        SharePlus.instance.share(
+                          ShareParams(
+                            text: 'Temukan acara "${event.title}" di TemuKampus Mobile (Universitas Mercu Buana)!\nhttp://temukampus.test/events/${event.slug}',
+                            subject: event.title,
+                          ),
+                        );
+                      } catch (_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Tautan acara "${event.title}" disalin!')),
+                        );
+                      }
                     },
                   ),
                   const SizedBox(width: 8),
@@ -116,17 +142,41 @@ class EventDetailScreen extends ConsumerWidget {
                           size: 64,
                         ),
                       ),
-                      // Gradient Overlay
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.4),
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.7),
-                            ],
+                      // Gradient Overlay Atas & Bawah
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.5),
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.75),
+                              ],
+                              stops: const [0.0, 0.4, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Badge Kategori di Pojok Kiri Bawah Poster
+                      Positioned(
+                        left: 20,
+                        bottom: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.signal,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.ink, width: 1.2),
+                          ),
+                          child: Text(
+                            (event.category ?? 'Acara Kampus').toUpperCase(),
+                            style: AppTypography.badge.copyWith(
+                              color: AppColors.ink,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
@@ -135,14 +185,14 @@ class EventDetailScreen extends ConsumerWidget {
                 ),
               ),
 
-              // 2. Info Acara Body
+              // 2. Body Detail Konten
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Organisasi Penyelenggara
+                      // Ormawa Host & Format Badge
                       Row(
                         children: [
                           Container(
@@ -150,10 +200,12 @@ class EventDetailScreen extends ConsumerWidget {
                             height: 36,
                             decoration: BoxDecoration(
                               color: AppColors.cobaltLight,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.cobalt, width: 1.2),
                             ),
-                            child: const Icon(Icons.groups_rounded, color: AppColors.cobalt, size: 20),
+                            child: const Center(
+                              child: Icon(Icons.groups_rounded, color: AppColors.cobalt, size: 18),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -226,9 +278,9 @@ class EventDetailScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.ink200, width: 1.2),
+                          border: Border.all(color: AppColors.ink, width: 1.2),
                           boxShadow: const [
-                            BoxShadow(color: AppColors.ink, offset: Offset(2, 2), blurRadius: 0),
+                            BoxShadow(color: AppColors.ink, offset: Offset(2.5, 2.5), blurRadius: 0),
                           ],
                         ),
                         child: Column(
@@ -277,15 +329,35 @@ class EventDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // Informasi Sisa Kuota Bar
-                      if (event.quota != null) ...[
-                        _buildQuotaProgress(event),
-                        const SizedBox(height: 20),
-                      ],
+                      // Informasi Sisa Kuota Bar (QuotaProgressBar)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.ink, width: 1.2),
+                          boxShadow: const [
+                            BoxShadow(color: AppColors.ink, offset: Offset(2.5, 2.5), blurRadius: 0),
+                          ],
+                        ),
+                        child: QuotaProgressBar(
+                          quota: event.quota,
+                          remainingQuota: event.remainingQuota,
+                          registeredCount: event.registeredCount,
+                          isFull: event.isFull,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
 
                       // Syarat Program Studi & Angkatan
                       if (detail.allowedStudyPrograms.isNotEmpty || detail.minCohortYear != null) ...[
                         _buildEligibilityTermsCard(detail),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Info Pembayaran Panitia (Jika Berbayar)
+                      if (event.isPaid && event.bankName != null) ...[
+                        _buildBankPaymentCard(event),
                         const SizedBox(height: 20),
                       ],
 
@@ -326,8 +398,7 @@ class EventDetailScreen extends ConsumerWidget {
             child: _buildBottomActionBar(
               context: context,
               event: event,
-              eligibility: eligibility,
-              isLoggedIn: authState.isAuthenticated,
+              ctaResult: ctaResult,
             ),
           ),
         ],
@@ -348,54 +419,6 @@ class EventDetailScreen extends ConsumerWidget {
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(label, style: AppTypography.badge.copyWith(color: color)),
-    );
-  }
-
-  Widget _buildQuotaProgress(EventModel event) {
-    final quota = event.quota ?? 100;
-    final remaining = event.remainingQuota ?? 0;
-    final filled = quota - remaining;
-    final progress = (filled / quota).clamp(0.0, 1.0);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.ink200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Ketersediaan Kuota', style: AppTypography.labelSmall),
-              Text(
-                event.isFull ? 'Kuota Penuh' : 'Tersisa $remaining dari $quota Tiket',
-                style: AppTypography.labelSmall.copyWith(
-                  color: event.isFull ? AppColors.dangerText : AppColors.cobalt,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: AppColors.ink100,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                event.isFull
-                    ? AppColors.danger
-                    : (event.isQuotaAlmostFull ? AppColors.signal : AppColors.cobalt),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -436,34 +459,86 @@ class EventDetailScreen extends ConsumerWidget {
     );
   }
 
-  /// STICKY BOTTOM ACTION BAR DENGAN 11 STATUS CTA
+  Widget _buildBankPaymentCard(EventModel event) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.ink, width: 1.2),
+        boxShadow: const [
+          BoxShadow(color: AppColors.ink, offset: Offset(2.5, 2.5), blurRadius: 0),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined, color: AppColors.cobalt, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Informasi Rekening Pembayaran',
+                style: AppTypography.titleSmall.copyWith(fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${event.bankName}: ${event.bankAccountNumber}',
+            style: AppTypography.numericCode.copyWith(fontSize: 14, color: AppColors.cobalt),
+          ),
+          if (event.bankAccountName != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              'a.n. ${event.bankAccountName}',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.ink500),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// STICKY BOTTOM ACTION BAR DENGAN 11 STATUS CTA SESUAI PRD §7.4.1
   Widget _buildBottomActionBar({
     required BuildContext context,
     required EventModel event,
-    required EligibilityResultModel? eligibility,
-    required bool isLoggedIn,
+    required CtaStateModel ctaResult,
   }) {
-    final ctaState = eligibility?.ctaState ??
-        (!isLoggedIn
-            ? EventCtaState.notLoggedIn
-            : (event.isFull ? EventCtaState.quotaFull : EventCtaState.canRegister));
-
     Widget actionWidget;
 
-    switch (ctaState) {
+    switch (ctaResult.status) {
+      // 1. Event dibatalkan
       case EventCtaState.eventCancelled:
         actionWidget = Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: AppColors.dangerLight,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.danger),
           ),
-          child: Text('Acara Ini Telah Dibatalkan', style: AppTypography.titleSmall.copyWith(color: AppColors.dangerText)),
+          child: Column(
+            children: [
+              Text(
+                'Acara Ini Telah Dibatalkan',
+                style: AppTypography.titleSmall.copyWith(color: AppColors.dangerText),
+              ),
+              if (ctaResult.reason != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  ctaResult.reason!,
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.dangerText, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
         );
         break;
 
+      // 2. Event sudah berakhir
       case EventCtaState.eventEnded:
         actionWidget = StickerButton(
           label: 'Pendaftaran Ditutup (Acara Selesai)',
@@ -472,46 +547,65 @@ class EventDetailScreen extends ConsumerWidget {
         );
         break;
 
+      // 3. Belum login
       case EventCtaState.notLoggedIn:
         actionWidget = StickerButton(
           label: 'Masuk untuk Mendaftar',
           variant: StickerButtonVariant.primary,
-          onPressed: () => context.push(AppRoutes.login),
+          onPressed: () {
+            AppHaptics.selection();
+            context.push(AppRoutes.login);
+          },
         );
         break;
 
+      // 4. Email belum terverifikasi
       case EventCtaState.emailUnverified:
         actionWidget = StickerButton(
           label: 'Verifikasi Email Terlebih Dahulu',
           variant: StickerButtonVariant.secondary,
-          onPressed: () => context.push(AppRoutes.verifyEmail),
+          onPressed: () {
+            AppHaptics.selection();
+            context.push(AppRoutes.verifyEmail);
+          },
         );
         break;
 
+      // 5. Profil belum lengkap
       case EventCtaState.profileIncomplete:
         actionWidget = StickerButton(
           label: 'Lengkapi Profil (No. WhatsApp)',
           variant: StickerButtonVariant.secondary,
-          onPressed: () => context.push(AppRoutes.profile),
+          onPressed: () {
+            AppHaptics.selection();
+            context.push(AppRoutes.profile);
+          },
         );
         break;
 
+      // 6. Sudah punya tiket aktif
       case EventCtaState.alreadyRegistered:
         actionWidget = StickerButton(
           label: 'Lihat Tiket Saya',
           variant: StickerButtonVariant.primary,
           icon: const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 18),
-          onPressed: () => context.go(AppRoutes.myTickets),
+          onPressed: () {
+            AppHaptics.selection();
+            context.go(AppRoutes.myTickets);
+          },
         );
         break;
 
+      // 7. Tidak eligible (Syarat Tidak Cocok)
       case EventCtaState.notEligible:
-        final reason = eligibility?.reasons.isNotEmpty == true
-            ? eligibility!.reasons.first
-            : 'Acara ini tidak terbuka untuk prodi atau angkatan Anda.';
+        final reason = ctaResult.reason ?? 'Acara ini tidak terbuka untuk prodi atau angkatan Anda.';
         actionWidget = Column(
           children: [
-            Text(reason, textAlign: TextAlign.center, style: AppTypography.bodySmall.copyWith(color: AppColors.dangerText)),
+            Text(
+              reason,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(color: AppColors.dangerText),
+            ),
             const SizedBox(height: 8),
             StickerButton(
               label: 'Syarat Tidak Cocok',
@@ -522,14 +616,18 @@ class EventDetailScreen extends ConsumerWidget {
         );
         break;
 
+      // 8. Pendaftaran belum dibuka
       case EventCtaState.notOpenYet:
         actionWidget = StickerButton(
-          label: 'Pendaftaran Belum Dibuka',
+          label: event.registrationOpenAt != null
+              ? 'Dibuka pada ${AppFormatters.eventDate(event.registrationOpenAt!)}'
+              : 'Pendaftaran Belum Dibuka',
           variant: StickerButtonVariant.outline,
           onPressed: null,
         );
         break;
 
+      // 9. Pendaftaran ditutup
       case EventCtaState.registrationClosed:
         actionWidget = StickerButton(
           label: 'Pendaftaran Ditutup',
@@ -538,6 +636,7 @@ class EventDetailScreen extends ConsumerWidget {
         );
         break;
 
+      // 10. Kuota penuh
       case EventCtaState.quotaFull:
         actionWidget = StickerButton(
           label: 'Kuota Penuh',
@@ -546,11 +645,13 @@ class EventDetailScreen extends ConsumerWidget {
         );
         break;
 
+      // 11. Eligible & Kuota Tersedia
       case EventCtaState.canRegister:
         actionWidget = StickerButton(
           label: event.isFree ? 'Daftar Sekarang (Gratis)' : 'Daftar & Bayar (${event.formattedPrice})',
           variant: StickerButtonVariant.primary,
           onPressed: () {
+            AppHaptics.selection();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Formulir pendaftaran dan pembayaran manual akan dibuka di Tahap 4!'),
@@ -569,7 +670,7 @@ class EventDetailScreen extends ConsumerWidget {
         border: const Border(top: BorderSide(color: AppColors.ink100, width: 1.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.05),
+            color: AppColors.ink.withValues(alpha: 0.08),
             offset: const Offset(0, -3),
             blurRadius: 6,
           ),

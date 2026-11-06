@@ -22,6 +22,9 @@ class AppColors {
 
   static const Color amber = Color(0xFF8A5A00);        // Status Menunggu Verifikasi
   static const Color amberLight = Color(0xFFFFF1CC);
+  static const Color warning = amber;
+  static const Color warningLight = amberLight;
+  static const Color warningText = amber;
 
   static const Color danger = Color(0xFFD93C3C);       // Galat, Ditolak, Kuota Habis
   static const Color dangerLight = Color(0xFFFDE3E3);

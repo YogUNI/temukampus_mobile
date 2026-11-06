@@ -13,6 +13,7 @@ class EventsRepository {
   EventsRepository(this._remoteDataSource);
 
   Future<List<EventModel>> getEvents({
+    EventFilterModel? filterModel,
     String? search,
     String? category,
     String? format,
@@ -21,6 +22,7 @@ class EventsRepository {
     int page = 1,
   }) async {
     return await _remoteDataSource.getEvents(
+      filterModel: filterModel,
       search: search,
       category: category,
       format: format,
@@ -38,7 +40,7 @@ class EventsRepository {
     return await _remoteDataSource.checkEligibility(slug);
   }
 
-  Future<List<EventCategoryModel>> getCategories() async {
+  Future<List<CategoryModel>> getCategories() async {
     return await _remoteDataSource.getCategories();
   }
 }
