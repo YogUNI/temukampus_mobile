@@ -8,6 +8,7 @@ import 'package:temukampus_mobile/core/storage/secure_storage_service.dart';
 import 'package:temukampus_mobile/core/utils/formatters.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/splash_screen.dart';
+import 'package:temukampus_mobile/features/auth/presentation/widgets/splash_scene.dart';
 
 import 'auth_notifier_test.dart';
 
@@ -80,6 +81,53 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tester.pump(const Duration(milliseconds: 1300));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('scene 3D: chip orbit & tiket tampil tanpa overflow',
+        (tester) async {
+      await _pumpApp(tester);
+
+      expect(find.byType(SplashTicketScene), findsOneWidget);
+
+      // Tengah animasi: chip orbit sudah masuk, tiket masih berputar.
+      await tester.pump(const Duration(milliseconds: 1400));
+      expect(find.text('Seminar'), findsOneWidget);
+      expect(find.text('4 SKP'), findsOneWidget);
+      expect(find.text('Gratis'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(milliseconds: 1200));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('tiket memakai proyeksi perspektif (bukan scale 2D)',
+        (tester) async {
+      await _pumpApp(tester);
+
+      // Fase awal: kartu sedang berputar 3D.
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final matrices = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      // storage[11] ≠ 0 → ada entri perspektif (m32) pada matriks.
+      expect(
+        matrices.any((m) => m.storage[11] != 0),
+        isTrue,
+        reason: 'scene splash harus memakai matriks perspektif',
+      );
+
+      // storage[0] = cos(rotateY) → < 1 berarti kartu benar-benar miring.
+      expect(
+        matrices.any((m) => m.storage[0].abs() < 0.999),
+        isTrue,
+        reason: 'kartu harus berotasi pada sumbu Y di fase masuk',
+      );
+
+      await tester.pump(SplashScreen.totalDuration);
       await tester.pumpAndSettle();
     });
   });

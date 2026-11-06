@@ -5,6 +5,7 @@ import 'package:temukampus_mobile/app/app.dart';
 import 'package:temukampus_mobile/core/storage/local_cache_service.dart';
 import 'package:temukampus_mobile/core/storage/secure_storage_service.dart';
 import 'package:temukampus_mobile/core/utils/formatters.dart';
+import 'package:temukampus_mobile/features/auth/presentation/screens/splash_screen.dart';
 import 'auth_notifier_test.dart';
 
 void main() {
@@ -31,7 +32,7 @@ void main() {
     expect(find.text('Universitas Mercu Buana'), findsOneWidget);
 
     // Majukan waktu melewati durasi splash dan microtasks async
-    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pump(SplashScreen.totalDuration + const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
     // Verifikasi layar login muncul setelah splash
