@@ -132,6 +132,7 @@ class EventsRemoteDataSource {
         id: 1,
         title: 'Seminar Nasional: Masa Depan Artificial Intelligence di Indonesia',
         slug: 'seminar-nasional-ai-2026',
+        posterUrl: 'assets/images/posters/poster_ai_seminar.jpg',
         summary: 'Membahas model fondasi AI terkini dan dampaknya pada industri teknologi bersama pakar nasional.',
         description: '''
 ## Deskripsi Kegiatan
@@ -193,6 +194,7 @@ Perkembangan **Artificial Intelligence (AI)** dan *Large Language Models (LLM)* 
         id: 2,
         title: 'Workshop Cyber Security: Hands-on Penetration Testing & Ethical Hacking',
         slug: 'workshop-cyber-security-pentest',
+        posterUrl: 'assets/images/posters/poster_cyber_security.jpg',
         summary: 'Praktik langsung menemukan celah kerentanan aplikasi web dan hardening sistem keamanan.',
         description: '''
 ## Workshop Praktik Keamanan Siber
@@ -237,6 +239,7 @@ Workshop intensif mempelajari teknik simulasi serangan siber pada sistem aplikas
         id: 3,
         title: 'Festival Seni & Musik Kampus Meruya 2026',
         slug: 'festival-seni-musik-meruya-2026',
+        posterUrl: 'assets/images/posters/poster_music_fest.jpg',
         summary: 'Pesta kreasi mahasiswa UMB dengan penampilan band akustik kampus, bazaar kuliner, dan art exhibition.',
         description: '''
 ## Pesta Budaya & Apresiasi Karya Seni Mahasiswa
@@ -269,6 +272,7 @@ Ajang tahunan festival kampus menghadirkan pertunjukan musik akustik, pameran se
         id: 4,
         title: 'Pelatihan Public Speaking: Berbicara Lugas & Memukau di Depan Publik',
         slug: 'pelatihan-public-speaking-leadership',
+        posterUrl: 'assets/images/posters/poster_public_speaking.jpg',
         summary: 'Mengembangkan rasa percaya diri saat presentasi akademik dan kepemimpinan organisasi kemahasiswaan.',
         description: '''
 ## Kembangkan Kemampuan Komunikasi & Kepemimpinan
@@ -301,6 +305,7 @@ Pelatihan interaktif bagi mahasiswa yang ingin mengasah kemampuan berbicara pers
         id: 5,
         title: 'Mercu Buana UI/UX Design Competition 2026',
         slug: 'mercu-buana-uiux-competition',
+        posterUrl: 'assets/images/posters/poster_uiux_design.jpg',
         summary: 'Ajang kreasi mahasiswa dalam memecahkan masalah kemahasiswaan dengan desain antarmuka modern.',
         description: '''
 ## Kompetisi Desain Antarmuka Tingkat Universitas
@@ -336,6 +341,7 @@ Tantang kemampuan riset UX dan visual UI Anda dalam merancang solusi digital ram
         id: 6,
         title: 'Kuliah Tamu Technopreneur: Merintis Startup Kampus dari Nol',
         slug: 'kuliah-tamu-technopreneur',
+        posterUrl: 'assets/images/posters/poster_startup.jpg',
         summary: 'Sharing session bersama alumni pendiri tech startup tentang validasi produk dan pendanaan awal.',
         description: '''
 ## Membangun Produk Digital Dari Kampus

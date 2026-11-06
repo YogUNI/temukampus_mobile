@@ -8,6 +8,7 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../data/models/event_model.dart';
 import '../controllers/event_detail_controller.dart';
@@ -218,14 +219,9 @@ class EventDetailScreen extends ConsumerWidget {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(
-                        color: AppColors.ink800,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.image_rounded,
-                          color: AppColors.ink400,
-                          size: 64,
-                        ),
+                      AppNetworkOrAssetImage(
+                        imagePath: event.posterUrl,
+                        fit: BoxFit.cover,
                       ),
                       // Gradient Overlay Atas & Bawah
                       Positioned.fill(

@@ -10,6 +10,7 @@ import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../../events/presentation/controllers/event_detail_controller.dart';
 import '../controllers/registration_controller.dart';
@@ -389,15 +390,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.cobaltLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.event_note_rounded, color: AppColors.cobalt, size: 24),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: AppNetworkOrAssetImage(
+                        imagePath: event.posterUrl,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(width: 12),

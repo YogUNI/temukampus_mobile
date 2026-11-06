@@ -9,6 +9,7 @@ import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../core/utils/image_compressor.dart';
+import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -649,12 +650,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   Stack(
                     children: [
-                      CircleAvatar(
-                        radius: 38,
-                        backgroundColor: AppColors.cobaltLight,
-                        child: Text(
-                          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                          style: AppTypography.hero.copyWith(color: AppColors.cobalt, fontSize: 30),
+                      Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.cobalt, width: 2),
+                        ),
+                        child: ClipOval(
+                          child: const AppNetworkOrAssetImage(
+                            imagePath: 'assets/images/avatars/user_avatar.jpg',
+                            width: 76,
+                            height: 76,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                       Positioned(

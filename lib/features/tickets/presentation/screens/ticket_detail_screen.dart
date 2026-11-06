@@ -14,6 +14,7 @@ import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../core/utils/image_compressor.dart';
+import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../controllers/ticket_detail_controller.dart';
 
 class TicketDetailScreen extends ConsumerWidget {
@@ -381,9 +382,30 @@ class TicketDetailScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          ticket.event.title,
-                          style: AppTypography.titleMedium.copyWith(fontSize: 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (ticket.event.posterUrl != null) ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: AppNetworkOrAssetImage(
+                                  imagePath: ticket.event.posterUrl,
+                                  width: 58,
+                                  height: 58,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: Text(
+                                ticket.event.title,
+                                style: AppTypography.titleMedium.copyWith(fontSize: 15.5),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
 

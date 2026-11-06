@@ -3,6 +3,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../data/models/event_model.dart';
 
 class EventTicketCard extends StatelessWidget {
@@ -36,46 +37,69 @@ class EventTicketCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Penyelenggara & Format Badge
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          event.organization.name,
-                          style: AppTypography.badge.copyWith(
-                            color: AppColors.cobalt,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.ink100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          event.format.toUpperCase(),
-                          style: AppTypography.badge.copyWith(
-                            color: AppColors.ink700,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Penyelenggara & Format Badge
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    event.organization.name,
+                                    style: AppTypography.badge.copyWith(
+                                      color: AppColors.cobalt,
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.ink100,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    event.format.toUpperCase(),
+                                    style: AppTypography.badge.copyWith(
+                                      color: AppColors.ink700,
+                                      fontSize: 9,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
 
-                  // Judul Acara
-                  Text(
-                    event.title,
-                    style: AppTypography.titleMedium.copyWith(fontSize: 16),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                            // Judul Acara
+                            Text(
+                              event.title,
+                              style: AppTypography.titleMedium.copyWith(fontSize: 15),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (event.posterUrl != null) ...[
+                        const SizedBox(width: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: AppNetworkOrAssetImage(
+                            imagePath: event.posterUrl,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 10),
 
@@ -112,36 +136,62 @@ class EventTicketCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // Badges: SKP, Sertifikat, Kuota Menipis
+                  // Badges: SKP, Sertifikat, Kuota
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
                     children: [
-                      if (event.hasSkp)
-                        _buildChip(
-                          '${event.skpPoints} SKP',
-                          AppColors.cobalt,
-                          AppColors.cobaltLight,
+                      if (event.skpPoints > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.cobaltLight,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            '${event.skpPoints} SKP',
+                            style: AppTypography.badge.copyWith(color: AppColors.cobalt, fontSize: 10),
+                          ),
                         ),
                       if (event.hasCertificate)
-                        _buildChip(
-                          'Sertifikat',
-                          AppColors.mintText,
-                          AppColors.mintLight,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.mintLight,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.mint.withValues(alpha: 0.4)),
+                          ),
+                          child: Text(
+                            'Sertifikat',
+                            style: AppTypography.badge.copyWith(color: AppColors.mintText, fontSize: 10),
+                          ),
+                        ),
+                      if (event.remainingQuota != null && event.remainingQuota! <= 10 && event.remainingQuota! > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.signalLight,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Sisa ${event.remainingQuota} tiket!',
+                            style: AppTypography.badge.copyWith(color: AppColors.ink, fontSize: 10),
+                          ),
                         ),
                       if (event.isFull)
-                        _buildChip(
-                          'Kuota Penuh',
-                          AppColors.dangerText,
-                          AppColors.dangerLight,
-                        )
-                      else if (event.isQuotaAlmostFull)
-                        _buildChip(
-                          'Sisa ${event.remainingQuota} tiket!',
-                          AppColors.ink,
-                          AppColors.signalLight,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.ink200,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Kuota Penuh',
+                            style: AppTypography.badge.copyWith(color: AppColors.ink500, fontSize: 10),
+                          ),
                         ),
                     ],
                   ),
@@ -150,14 +200,15 @@ class EventTicketCard extends StatelessWidget {
             ),
 
             // Garis Sobekan Putus-Putus
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14),
-              child: DottedTearLine(color: AppColors.ink200),
+            const DottedTearLine(
+              dashWidth: 5,
+              dashSpace: 4,
+              height: 1.2,
+              color: AppColors.ink200,
             ),
 
-            // Stub Sobekan Tiket Bagian Bawah
-            Container(
-              color: AppColors.paper,
+            // Bagian Bawah Tiket (Harga & CTA)
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,14 +218,18 @@ class EventTicketCard extends StatelessWidget {
                     children: [
                       Text(
                         'HARGA TIKET',
-                        style: AppTypography.labelSmall.copyWith(fontSize: 9, color: AppColors.ink400),
+                        style: AppTypography.labelSmall.copyWith(
+                          fontSize: 9,
+                          color: AppColors.ink500,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 2),
                       Text(
-                        event.isFree ? 'Gratis' : event.formattedPrice,
-                        style: AppTypography.numericCode.copyWith(
-                          fontSize: 15,
-                          color: event.isFree ? AppColors.mintText : AppColors.cobalt,
+                        event.formattedPrice,
+                        style: AppTypography.hero.copyWith(
+                          fontSize: 16,
+                          color: event.isPaid ? AppColors.cobalt : AppColors.mintText,
                         ),
                       ),
                     ],
@@ -183,10 +238,10 @@ class EventTicketCard extends StatelessWidget {
                     children: [
                       Text(
                         'Lihat Detail',
-                        style: AppTypography.labelSmall.copyWith(color: AppColors.cobalt),
+                        style: AppTypography.label.copyWith(color: AppColors.cobalt, fontSize: 13),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded, color: AppColors.cobalt, size: 14),
+                      const Icon(Icons.arrow_forward_rounded, size: 15, color: AppColors.cobalt),
                     ],
                   ),
                 ],
@@ -194,20 +249,6 @@ class EventTicketCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildChip(String text, Color textCol, Color bgCol) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-      decoration: BoxDecoration(
-        color: bgCol,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: AppTypography.badge.copyWith(color: textCol, fontSize: 10),
       ),
     );
   }

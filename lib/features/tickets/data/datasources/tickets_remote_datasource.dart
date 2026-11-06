@@ -163,7 +163,7 @@ class TicketsRemoteDataSource {
       event: TicketEventModel(
         title: 'Seminar Nasional: Masa Depan Artificial Intelligence di Indonesia',
         slug: 'seminar-nasional-ai-2026',
-        posterUrl: null,
+        posterUrl: 'assets/images/posters/poster_ai_seminar.jpg',
         startAt: DateTime(2026, 11, 20, 9, 0),
         endAt: DateTime(2026, 11, 20, 12, 30),
         location: 'Auditorium Tower Lt. 7 Kampus Meruya & Zoom Meeting',
@@ -192,7 +192,7 @@ class TicketsRemoteDataSource {
       event: TicketEventModel(
         title: 'Workshop Cyber Security: Penetration Testing & Ethical Hacking',
         slug: 'workshop-cyber-security-pentest',
-        posterUrl: null,
+        posterUrl: 'assets/images/posters/poster_cyber_security.jpg',
         startAt: DateTime(2026, 11, 22, 13, 0),
         endAt: DateTime(2026, 11, 22, 17, 0),
         location: 'Auditorium Tower Lt. 7 Kampus Meruya',
@@ -221,7 +221,7 @@ class TicketsRemoteDataSource {
       event: TicketEventModel(
         title: 'Mercu Buana UI/UX Design Competition 2026',
         slug: 'mercu-buana-uiux-competition',
-        posterUrl: null,
+        posterUrl: 'assets/images/posters/poster_uiux_design.jpg',
         startAt: DateTime(2026, 12, 1, 8, 30),
         endAt: DateTime(2026, 12, 1, 16, 0),
         location: 'Online via Discord & Google Meet',
@@ -251,7 +251,7 @@ class TicketsRemoteDataSource {
       event: TicketEventModel(
         title: 'Kuliah Tamu Technopreneur: Merintis Startup Kampus dari Nol',
         slug: 'kuliah-tamu-technopreneur',
-        posterUrl: null,
+        posterUrl: 'assets/images/posters/poster_startup.jpg',
         startAt: DateTime(2026, 10, 20, 10, 0),
         endAt: DateTime(2026, 10, 20, 12, 0),
         location: 'Ruang Seminar Tower Lt. 2 Kampus Meruya',
