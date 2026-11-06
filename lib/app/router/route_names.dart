@@ -21,6 +21,7 @@ class AppRoutes {
   static String ticketDetailPath(String code) => '/tickets/$code';
 
   static const String scanner = '/scanner';
+  static const String scannerSelectEvent = '/scanner/select-event';
   static const String scannerGate = '/scanner/:eventId';
   static String scannerGatePath(int eventId) => '/scanner/$eventId';
 

@@ -13,6 +13,8 @@ import '../../features/events/presentation/screens/explore_screen.dart';
 import '../../features/events/presentation/screens/home_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/registration/presentation/screens/registration_screen.dart';
+import '../../features/scanner/presentation/screens/event_gate_selector_screen.dart';
+import '../../features/scanner/presentation/screens/scanner_screen.dart';
 import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
 import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
 import '../shell/main_scaffold.dart';
@@ -106,6 +108,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final code = state.pathParameters['code'] ?? '';
           return TicketDetailScreen(ticketCode: code);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.scannerSelectEvent,
+        builder: (context, state) => const EventGateSelectorScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.scannerGate,
+        builder: (context, state) {
+          final eventIdStr = state.pathParameters['eventId'] ?? '1';
+          final eventId = int.tryParse(eventIdStr) ?? 1;
+          return ScannerScreen(eventId: eventId);
         },
       ),
 

@@ -120,3 +120,4 @@ class TicketDetailController extends StateNotifier<TicketDetailState> {
     }
   }
 }
+

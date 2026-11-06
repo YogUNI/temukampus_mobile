@@ -73,3 +73,4 @@ class TicketsController extends StateNotifier<TicketsState> {
     await fetchTickets();
   }
 }
+
