@@ -12,6 +12,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String explore = '/explore';
   static const String eventDetail = '/events/:slug';
+  static const String eventRegister = '/events/:slug/register';
   static String eventDetailPath(String slug) => '/events/$slug';
   static String eventRegisterPath(String slug) => '/events/$slug/register';
 

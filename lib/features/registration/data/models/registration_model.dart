@@ -33,7 +33,7 @@ class PaymentPreviewModel {
       bankName: json['bank_name'] as String?,
       accountNumber: json['account_number'] as String?,
       accountName: json['account_name'] as String?,
-      qrisUrl: json['qris_url'] as String?,
+      qrisUrl: (json['qris_url'] ?? json['qris_image_url']) as String?,
     );
   }
 
@@ -51,34 +51,43 @@ class PaymentPreviewModel {
   }
 }
 
-/// Model Hasil Pendaftaran Acara Sukses (`POST /events/{slug}/register`).
-class RegistrationResultModel {
+/// Model Pendaftaran Acara Mahasiswa
+class RegistrationModel {
   final String ticketCode;
-  final String status;
+  final String status; // 'pending_verification', 'needs_revision', 'confirmed', 'rejected', 'cancelled'
   final String statusLabel;
   final int amountDue;
+  final int uniqueCode;
   final DateTime registeredAt;
+  final String? paymentProofPath;
 
-  const RegistrationResultModel({
+  const RegistrationModel({
     required this.ticketCode,
     required this.status,
     required this.statusLabel,
     required this.amountDue,
+    this.uniqueCode = 0,
     required this.registeredAt,
+    this.paymentProofPath,
   });
 
   bool get isConfirmed => status == 'confirmed';
   bool get isPendingVerification => status == 'pending_verification';
+  bool get isNeedsRevision => status == 'needs_revision';
+  bool get isCancelled => status == 'cancelled';
+  bool get isRejected => status == 'rejected';
 
-  factory RegistrationResultModel.fromJson(Map<String, dynamic> json) {
-    return RegistrationResultModel(
+  factory RegistrationModel.fromJson(Map<String, dynamic> json) {
+    return RegistrationModel(
       ticketCode: json['ticket_code'] as String? ?? 'TK-XXXXXX',
       status: json['status'] as String? ?? 'pending_verification',
       statusLabel: json['status_label'] as String? ?? 'Menunggu Verifikasi',
       amountDue: json['amount_due'] as int? ?? 0,
+      uniqueCode: json['unique_code'] as int? ?? 0,
       registeredAt: json['registered_at'] != null
           ? DateTime.parse(json['registered_at'] as String)
           : DateTime.now(),
+      paymentProofPath: json['payment_proof_path'] as String?,
     );
   }
 
@@ -88,7 +97,12 @@ class RegistrationResultModel {
       'status': status,
       'status_label': statusLabel,
       'amount_due': amountDue,
+      'unique_code': uniqueCode,
       'registered_at': registeredAt.toIso8601String(),
+      'payment_proof_path': paymentProofPath,
     };
   }
 }
+
+/// Alias untuk backward-compatibility dengan kode sebelumnya
+typedef RegistrationResultModel = RegistrationModel;

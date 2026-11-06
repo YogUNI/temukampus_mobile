@@ -652,12 +652,7 @@ class EventDetailScreen extends ConsumerWidget {
           variant: StickerButtonVariant.primary,
           onPressed: () {
             AppHaptics.selection();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Formulir pendaftaran dan pembayaran manual akan dibuka di Tahap 4!'),
-                backgroundColor: AppColors.cobalt,
-              ),
-            );
+            context.push(AppRoutes.eventRegisterPath(event.slug));
           },
         );
         break;

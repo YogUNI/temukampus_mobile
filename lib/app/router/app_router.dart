@@ -12,7 +12,9 @@ import '../../features/events/presentation/screens/event_detail_screen.dart';
 import '../../features/events/presentation/screens/explore_screen.dart';
 import '../../features/events/presentation/screens/home_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/registration/presentation/screens/registration_screen.dart';
 import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
+import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
 import '../shell/main_scaffold.dart';
 import 'route_names.dart';
 
@@ -90,6 +92,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final slug = state.pathParameters['slug'] ?? '';
           return EventDetailScreen(slug: slug);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.eventRegister,
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return RegistrationScreen(slug: slug);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.ticketDetail,
+        builder: (context, state) {
+          final code = state.pathParameters['code'] ?? '';
+          return TicketDetailScreen(ticketCode: code);
         },
       ),
 
