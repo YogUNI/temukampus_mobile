@@ -49,6 +49,34 @@ CustomTransitionPage<void> _buildSlideTransition({
   );
 }
 
+/// Transisi "bloom": fade + skala halus. Dipakai untuk rute pertama setelah
+/// splash (onboarding/login) agar perpindahan terasa menyatu, bukan menggeser.
+CustomTransitionPage<void> _buildFadeScaleTransition({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 420),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.97, end: 1).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider.notifier);
 
@@ -120,7 +148,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.onboarding,
-        pageBuilder: (context, state) => _buildSlideTransition(
+        pageBuilder: (context, state) => _buildFadeScaleTransition(
           state: state,
           child: const OnboardingScreen(),
         ),
@@ -129,7 +157,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Auth Routes
       GoRoute(
         path: AppRoutes.login,
-        pageBuilder: (context, state) => _buildSlideTransition(
+        pageBuilder: (context, state) => _buildFadeScaleTransition(
           state: state,
           child: LoginScreen(
             redirectUrl: state.uri.queryParameters['redirect'] != null

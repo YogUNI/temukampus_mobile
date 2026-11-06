@@ -1,46 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_radii.dart';
+import '../../../../app/theme/app_shadows.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../core/storage/local_cache_service.dart';
+import '../../../../core/utils/haptics.dart';
+import '../widgets/onboarding_illustration.dart';
 
+class OnboardingItem {
+  final String badge;
+  final String title;
+  final String description;
+
+  const OnboardingItem({
+    required this.badge,
+    required this.title,
+    required this.description,
+  });
+}
+
+/// Onboarding 3 langkah dengan parallax antar-slide.
+///
+/// Setiap slide bergerak lebih lambat dari halaman (translate 48pt + scale 0.94)
+/// sehingga terasa seperti lapisan yang berkedalaman, bukan teks yang berganti.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
-  @override
-  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
-}
-
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  final PageController _pageController = PageController();
-  int _currentIndex = 0;
-
-  final List<OnboardingItem> _items = const [
+  static const List<OnboardingItem> items = [
     OnboardingItem(
-      icon: Icons.explore_rounded,
       badge: 'TERPUSAT & RESMI',
       title: 'Temukan Seluruh Acara Kampus UMB',
       description:
           'Seminar nasional, workshop teknologi, kompetisi, dan pameran ormawa kini terpusat dalam satu genggaman tanganmu.',
     ),
     OnboardingItem(
-      icon: Icons.bolt_rounded,
       badge: 'BEBAS REPOT',
       title: 'Daftar Cepat dengan Data Otomatis',
       description:
           'Cukup masukkan NIM sekali. Nama, prodi, dan fakultas langsung terhubung secara otomatis tanpa perlu mengisi formulir berulang kali.',
     ),
     OnboardingItem(
-      icon: Icons.qr_code_2_rounded,
       badge: 'TIKET DIGITAL',
       title: 'Tiket QR Code Anti Ribet Hari-H',
       description:
           'Simpan tiket digitalmu secara offline. Tunjukkan QR code di meja registrasi kampus dan presensi tercatat dalam hitungan detik.',
     ),
   ];
+
+  @override
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
+    with SingleTickerProviderStateMixin {
+  final PageController _pageController = PageController();
+  late final AnimationController _entrance;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
+  }
 
   Future<void> _completeToLogin() async {
     final cache = ref.read(localCacheServiceProvider);
@@ -56,169 +86,293 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     context.go(AppRoutes.home);
   }
 
+  void _goToPage(int index) {
+    AppHaptics.light();
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   void dispose() {
+    _entrance.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLast = _currentIndex == OnboardingScreen.items.length - 1;
+
     return Scaffold(
       backgroundColor: AppColors.paper,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        actions: [
-          TextButton(
-            onPressed: _exploreAsGuest,
-            child: Text(
-              'Lewati',
-              style: AppTypography.label.copyWith(color: AppColors.ink500),
-            ),
+      body: Stack(
+        children: [
+          // Aksen latar lembut di dua sudut
+          Positioned(
+            top: -120,
+            right: -100,
+            child: _Blob(size: 300, color: AppColors.cobalt.withValues(alpha: 0.06)),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _items.length,
-                onPageChanged: (index) => setState(() => _currentIndex = index),
-                itemBuilder: (context, index) {
-                  final item = _items[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          Positioned(
+            bottom: -140,
+            left: -110,
+            child: _Blob(size: 320, color: AppColors.signal.withValues(alpha: 0.07)),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                // Header: brand mini + lewati
+                FadeTransition(
+                  opacity: CurvedAnimation(
+                    parent: _entrance,
+                    curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.gutter,
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      0,
+                    ),
+                    child: Row(
                       children: [
-                        // Ilustrasi Icon Berkarakter Stiker Kampus
                         Container(
-                          width: 120,
-                          height: 120,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(color: AppColors.ink, width: 2),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.ink,
-                                offset: Offset(4, 4),
-                                blurRadius: 0,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            item.icon,
-                            size: 58,
                             color: AppColors.cobalt,
+                            borderRadius: AppRadii.borderXs,
+                          ),
+                          child: const Icon(
+                            Icons.confirmation_number_rounded,
+                            color: Colors.white,
+                            size: 17,
                           ),
                         ),
-                        const SizedBox(height: 36),
-
-                        // Badge Kategori
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.cobaltLight,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          'TemuKampus',
+                          style: AppTypography.titleSmall.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
                           ),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            AppHaptics.light();
+                            _exploreAsGuest();
+                          },
                           child: Text(
-                            item.badge,
-                            style: AppTypography.badge.copyWith(color: AppColors.cobalt),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Judul Slide
-                        Text(
-                          item.title,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.hero.copyWith(
-                            fontSize: 24,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Deskripsi
-                        Text(
-                          item.description,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.ink500,
-                            height: 1.5,
+                            'Lewati',
+                            style: AppTypography.label.copyWith(
+                              color: AppColors.ink500,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
-            ),
-
-            // Indikator Titik Carousel
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_items.length, (index) {
-                final isActive = _currentIndex == index;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: isActive ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: isActive ? AppColors.cobalt : AppColors.ink200,
-                    borderRadius: BorderRadius.circular(4),
                   ),
-                );
-              }),
-            ),
-            const SizedBox(height: 32),
+                ),
 
-            // Tombol Navigasi Bawah
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: _currentIndex == _items.length - 1
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: StickerButton(
-                            label: 'Masuk dengan Akun UMB',
-                            variant: StickerButtonVariant.primary,
-                            onPressed: _completeToLogin,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: StickerButton(
-                            label: 'Jelajahi Acara Dulu (Masuk Nanti)',
-                            variant: StickerButtonVariant.outline,
-                            onPressed: _exploreAsGuest,
-                          ),
-                        ),
-                      ],
-                    )
-                  : SizedBox(
-                      width: double.infinity,
-                      child: StickerButton(
-                        label: 'Lanjutkan',
-                        variant: StickerButtonVariant.primary,
-                        onPressed: () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
+                // Slide
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: OnboardingScreen.items.length,
+                    onPageChanged: (index) => setState(() => _currentIndex = index),
+                    itemBuilder: (context, index) {
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          double page = _currentIndex.toDouble();
+                          if (_pageController.hasClients &&
+                              _pageController.position.haveDimensions) {
+                            page = _pageController.page ?? page;
+                          }
+                          final delta = (page - index).clamp(-1.0, 1.0);
+                          return Opacity(
+                            opacity: (1 - delta.abs() * 0.85).clamp(0.0, 1.0),
+                            child: Transform.translate(
+                              offset: Offset(delta * 48, 0),
+                              child: Transform.scale(
+                                scale: 1 - delta.abs() * 0.06,
+                                child: child,
+                              ),
+                            ),
                           );
                         },
+                        child: _SlideContent(
+                          item: OnboardingScreen.items[index],
+                          index: index,
+                          entrance: _entrance,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Indikator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < OnboardingScreen.items.length; i++)
+                      GestureDetector(
+                        onTap: () => _goToPage(i),
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xxs,
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: AnimatedContainer(
+                            duration: AppDurations.base,
+                            curve: Curves.easeOutCubic,
+                            width: i == _currentIndex ? 26 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: i == _currentIndex
+                                  ? AppColors.cobalt
+                                  : AppColors.ink200,
+                              borderRadius: AppRadii.borderPill,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Aksi bawah
+                SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.25),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: _entrance,
+                    curve: const Interval(0.25, 1.0, curve: Curves.easeOutCubic),
+                  )),
+                  child: FadeTransition(
+                    opacity: CurvedAnimation(
+                      parent: _entrance,
+                      curve: const Interval(0.25, 1.0, curve: Curves.easeOut),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.gutter,
+                        AppSpacing.sm,
+                        AppSpacing.gutter,
+                        AppSpacing.xl,
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: AppDurations.base,
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        child: isLast
+                            ? _LastPageActions(
+                                key: const ValueKey('last'),
+                                onLogin: _completeToLogin,
+                                onGuest: _exploreAsGuest,
+                              )
+                            : SizedBox(
+                                key: const ValueKey('next'),
+                                width: double.infinity,
+                                child: StickerButton(
+                                  label: 'Lanjutkan',
+                                  variant: StickerButtonVariant.primary,
+                                  icon: const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  onPressed: () => _goToPage(_currentIndex + 1),
+                                ),
+                              ),
                       ),
                     ),
+                  ),
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SlideContent extends StatelessWidget {
+  final OnboardingItem item;
+  final int index;
+  final Animation<double> entrance;
+
+  const _SlideContent({
+    required this.item,
+    required this.index,
+    required this.entrance,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fade = CurvedAnimation(
+      parent: entrance,
+      curve: const Interval(0.1, 0.9, curve: Curves.easeOut),
+    );
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: AppSpacing.lg),
+            FadeTransition(
+              opacity: fade,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.94, end: 1).animate(fade),
+                child: OnboardingIllustration(index: index),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xxs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.cobaltLight,
+                borderRadius: AppRadii.borderPill,
+              ),
+              child: Text(
+                item.badge,
+                style: AppTypography.micro.copyWith(
+                  color: AppColors.cobalt,
+                  fontSize: 9.5,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              item.title,
+              textAlign: TextAlign.center,
+              style: AppTypography.hero.copyWith(fontSize: 25, height: 1.2),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              item.description,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.ink500,
+                height: 1.55,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
           ],
         ),
       ),
@@ -226,16 +380,62 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-class OnboardingItem {
-  final IconData icon;
-  final String badge;
-  final String title;
-  final String description;
+class _LastPageActions extends StatelessWidget {
+  final VoidCallback onLogin;
+  final VoidCallback onGuest;
 
-  const OnboardingItem({
-    required this.icon,
-    required this.badge,
-    required this.title,
-    required this.description,
+  const _LastPageActions({
+    super.key,
+    required this.onLogin,
+    required this.onGuest,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: StickerButton(
+            label: 'Masuk dengan Akun UMB',
+            variant: StickerButtonVariant.primary,
+            onPressed: onLogin,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          child: StickerButton(
+            label: 'Jelajahi Acara Dulu',
+            variant: StickerButtonVariant.outline,
+            onPressed: onGuest,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Blob extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _Blob({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
+      ),
+    );
+  }
 }
