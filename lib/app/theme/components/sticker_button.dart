@@ -109,12 +109,19 @@ class _StickerButtonState extends State<StickerButton> {
           widget.icon!,
           const SizedBox(width: 8),
         ],
-        Text(
-          widget.label,
-          style: AppTypography.titleMedium.copyWith(
-            color: text,
-            fontSize: 15,
-            letterSpacing: -0.2,
+        // Flexible + ellipsis: label panjang tidak boleh meluber keluar tombol
+        // (mis. saat tombol berada di setengah lebar sticky bar).
+        Flexible(
+          child: Text(
+            widget.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: AppTypography.titleMedium.copyWith(
+              color: text,
+              fontSize: 15,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
       ],
