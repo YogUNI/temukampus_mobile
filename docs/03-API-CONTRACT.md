@@ -216,6 +216,12 @@ Mengembalikan objek pengguna terkini beserta status verifikasi profil dan role p
       "slug": "seminar-nasional-ai-2026",
       "summary": "Membahas terobosan model fondasi AI terkini bersama pakar industri.",
       "poster_url": "http://temukampus.test/storage/posters/poster-ai.jpg",
+      "poster": {
+        "original": "http://temukampus.test/storage/posters/poster-ai.webp",
+        "hero": "http://temukampus.test/storage/posters/poster-ai_1200.webp",
+        "card": "http://temukampus.test/storage/posters/poster-ai_card.webp",
+        "thumb": "http://temukampus.test/storage/posters/poster-ai_thumb.webp"
+      },
       "format": "hybrid",
       "start_at": "2026-11-20T09:00:00+07:00",
       "end_at": "2026-11-20T12:30:00+07:00",

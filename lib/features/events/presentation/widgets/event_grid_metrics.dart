@@ -7,13 +7,19 @@ import '../../../../app/theme/app_spacing.dart';
 /// Kartu grid TIDAK boleh memakai `childAspectRatio`: rasio membuat tinggi kartu
 /// bergantung pada lebar layar sementara isi kartu berukuran tetap, sehingga
 /// terjadi overflow di lebar 360–412dp. Sebagai gantinya tinggi kartu dihitung
-/// eksplisit dari: tinggi poster (16:10) + tinggi blok konten yang diukur.
+/// eksplisit dari: tinggi poster + tinggi blok konten yang diukur.
+///
+/// Rasio poster = **4:5**, sama dengan rasio master poster di backend
+/// (`PosterProcessor` + cropper panitia mengekspor 1080×1350). Memakai rasio
+/// lain membuat poster terpotong 30–50% di grid.
 class EventGridMetrics {
   EventGridMetrics._();
 
   static const int columns = 2;
   static const double gap = AppSpacing.md;
-  static const double posterAspectRatio = 16 / 10;
+
+  /// 4:5 portrait — mengikuti master poster 1080×1350 dari backend.
+  static const double posterAspectRatio = 4 / 5;
 
   /// Tinggi minimum blok konten di bawah poster (padding + ormawa + 2 baris
   /// judul + tanggal + baris harga/panah). Diverifikasi oleh

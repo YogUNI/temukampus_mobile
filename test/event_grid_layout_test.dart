@@ -35,7 +35,7 @@ EventModel _event({
 void main() {
   group('EventGridCard layout', () {
     for (final width in [360.0, 375.0, 390.0, 412.0, 430.0]) {
-      testWidgets('tidak overflow & rasio poster 16:10 pada ${width.toInt()}dp',
+      testWidgets('tidak overflow & rasio poster 4:5 pada ${width.toInt()}dp',
           (tester) async {
         tester.view.physicalSize = Size(width, 844);
         tester.view.devicePixelRatio = 1.0;
@@ -77,8 +77,13 @@ void main() {
             matching: find.byType(AspectRatio),
           ),
         );
-        expect(posterRect.height / posterRect.width,
-            moreOrLessEquals(10 / 16, epsilon: 0.01));
+        // 4:5 portrait — sama dengan rasio master poster backend (1080×1350),
+        // supaya poster tidak terpotong di grid.
+        expect(
+          posterRect.height / posterRect.width,
+          moreOrLessEquals(1 / EventGridMetrics.posterAspectRatio, epsilon: 0.01),
+        );
+        expect(EventGridMetrics.posterAspectRatio, moreOrLessEquals(0.8));
       });
     }
 

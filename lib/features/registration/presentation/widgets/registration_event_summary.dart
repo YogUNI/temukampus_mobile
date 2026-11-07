@@ -33,7 +33,8 @@ class RegistrationEventSummary extends StatelessWidget {
             borderRadius: AppRadii.borderSm,
             child: AppNetworkOrAssetImage(
               imagePath: event!.posterUrl,
-              width: 52,
+              // 4:5 — rasio master poster backend (1080×1350).
+              width: 42,
               height: 52,
               fit: BoxFit.cover,
             ),

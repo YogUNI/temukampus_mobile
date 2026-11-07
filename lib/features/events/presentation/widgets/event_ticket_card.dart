@@ -59,8 +59,9 @@ class EventTicketCard extends StatelessWidget {
                       ClipRRect(
                         borderRadius: AppRadii.borderSm,
                         child: SizedBox(
-                          width: 92,
-                          height: 92,
+                          // 4:5 — rasio master poster (1080×1350), bukan kotak.
+                          width: 72,
+                          height: 90,
                           child: event.posterUrl != null
                               ? AppNetworkOrAssetImage(
                                   imagePath: event.posterUrl,

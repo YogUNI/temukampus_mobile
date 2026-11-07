@@ -219,7 +219,8 @@ class TicketPassCard extends StatelessWidget {
                         borderRadius: AppRadii.borderSm,
                         child: AppNetworkOrAssetImage(
                           imagePath: ticket.event.posterUrl,
-                          width: 56,
+                          // 4:5 — rasio master poster backend (1080×1350).
+                          width: 45,
                           height: 56,
                           fit: BoxFit.cover,
                         ),

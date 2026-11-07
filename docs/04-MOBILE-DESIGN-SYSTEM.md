@@ -324,3 +324,30 @@ class StatusPill extends StatelessWidget {
 }
 ```
 
+
+---
+
+## 7. Kontrak Poster: SATU Rasio, Banyak Ukuran (4:5)
+
+Poster acara adalah **satu berkas master** yang dikelola backend, bukan aset per platform.
+
+| Aturan | Nilai |
+|--------|-------|
+| Rasio master | **4:5** (portrait) |
+| Dimensi ekspor cropper panitia | **1080 × 1350** |
+| Penyimpanan backend | satu kolom `events.poster_path` (WebP) + varian lebar otomatis |
+| Varian web | `_800.webp`, `_1200.webp` (proporsional, tanpa crop) |
+| Varian app (rencana) | `_card.webp` 600×750, `_thumb.webp` 240×300 (proporsional, tanpa crop) |
+
+**Aturan keras untuk UI:** setiap kanvas poster di aplikasi **wajib 4:5**. Jangan memakai
+16:10, 16:9, atau kotak 1:1 — poster akan terpotong 30–50% dan tampil berbeda dari website.
+
+| Permukaan | Kanvas |
+|-----------|--------|
+| Grid Beranda / Jelajah | `EventGridMetrics.posterAspectRatio = 4 / 5` |
+| Carousel unggulan | poster 4:5 di sisi kanan + latar poster diburamkan |
+| Hero Detail Acara | poster 4:5 utuh (200×250) di atas latar diburamkan |
+| Thumb list / tiket / ringkasan | 72×90 · 52×64 · 45×56 · 42×52 (semua 4:5) |
+
+Latar diburamkan (`ImageFiltered` + scrim) dipakai untuk mengisi ruang tanpa memotong
+poster — pola yang sama dengan web yang menampilkan poster di `aspect-[4/5]`.

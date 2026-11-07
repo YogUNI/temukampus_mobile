@@ -77,7 +77,8 @@ class TicketListCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: AppRadii.borderSm,
                       child: SizedBox(
-                        width: 64,
+                        // 4:5 — rasio master poster backend (1080×1350).
+                        width: 52,
                         height: 64,
                         child: ticket.event.posterUrl != null
                             ? AppNetworkOrAssetImage(

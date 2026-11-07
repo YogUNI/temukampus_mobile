@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
@@ -195,15 +196,19 @@ class _HeroCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Poster dengan parallax halus (diperbesar agar tidak ada celah).
+              // Latar: poster yang sama, diburamkan. Memberi warna & suasana
+              // tanpa memotong poster 4:5 (yang tampil utuh di sisi kanan).
               ClipRect(
-                child: Transform.scale(
-                  scale: 1.12,
-                  child: Transform.translate(
-                    offset: Offset(0, parallax),
-                    child: AppNetworkOrAssetImage(
-                      imagePath: event.posterUrl,
-                      fit: BoxFit.cover,
+                child: ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Transform.scale(
+                    scale: 1.24,
+                    child: Transform.translate(
+                      offset: Offset(0, parallax),
+                      child: AppNetworkOrAssetImage(
+                        imagePath: event.posterUrl,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -223,11 +228,41 @@ class _HeroCard extends StatelessWidget {
                   ),
                 ),
               ),
+              // Poster 4:5 utuh di sisi kanan (rasio master backend 1080×1350).
+              Positioned(
+                top: AppSpacing.md,
+                right: AppSpacing.md,
+                bottom: AppSpacing.md,
+                child: AspectRatio(
+                  aspectRatio: 4 / 5,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadii.borderSm,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.38),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: AppRadii.borderSm,
+                      child: AppNetworkOrAssetImage(
+                        imagePath: event.posterUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Positioned(
                 top: AppSpacing.md,
                 left: AppSpacing.md,
-                right: AppSpacing.md,
-                child: Row(
+                right: 168,
+                child: Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
                   children: [
                     _HeroTag(
                       label: (event.category ?? 'Acara Kampus').toUpperCase(),
@@ -247,7 +282,7 @@ class _HeroCard extends StatelessWidget {
               ),
               Positioned(
                 left: AppSpacing.lg,
-                right: AppSpacing.lg,
+                right: 168,
                 bottom: AppSpacing.lg,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,24 +332,24 @@ class _HeroCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            event.formattedPrice,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.titleSmall.copyWith(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        Text(
+                          event.formattedPrice,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.titleSmall.copyWith(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
+                        const SizedBox(height: AppSpacing.sm),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.sm,
+                            horizontal: AppSpacing.sm,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -323,16 +358,21 @@ class _HeroCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Lihat Acara',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: AppColors.ink,
-                                  fontWeight: FontWeight.w800,
+                              Flexible(
+                                child: Text(
+                                  'Lihat Acara',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: AppColors.ink,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               const Icon(Icons.arrow_forward_rounded,
-                                  size: 14, color: AppColors.ink),
+                                  size: 13, color: AppColors.ink),
                             ],
                           ),
                         ),

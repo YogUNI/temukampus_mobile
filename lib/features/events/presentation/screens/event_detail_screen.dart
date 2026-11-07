@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -226,7 +228,7 @@ class EventDetailScreen extends ConsumerWidget {
 
   Widget _buildPosterHeader(BuildContext context, EventModel event) {
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 380,
       pinned: true,
       stretch: true,
       elevation: 0,
@@ -285,9 +287,14 @@ class EventDetailScreen extends ConsumerWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            AppNetworkOrAssetImage(
-              imagePath: event.posterUrl,
-              fit: BoxFit.cover,
+            // Latar: poster yang sama, diburamkan. Poster asli (4:5) tampil
+            // utuh di atasnya, jadi tidak ada bagian poster yang terpotong.
+            ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+              child: AppNetworkOrAssetImage(
+                imagePath: event.posterUrl,
+                fit: BoxFit.cover,
+              ),
             ),
             DecoratedBox(
               decoration: BoxDecoration(
@@ -303,11 +310,42 @@ class EventDetailScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            // Poster 4:5 utuh — rasio master 1080×1350 dari cropper panitia.
+            Positioned(
+              top: 76,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 200,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    borderRadius: AppRadii.borderMd,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: AppRadii.borderMd,
+                    child: AppNetworkOrAssetImage(
+                      imagePath: event.posterUrl,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               left: AppSpacing.gutter,
               right: AppSpacing.gutter,
               bottom: AppSpacing.xl,
-              child: Row(
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
