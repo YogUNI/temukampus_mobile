@@ -141,9 +141,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final dockRect = tester.getRect(find.byKey(const ValueKey('nav_dock')));
-      expect(dockRect.height, 64);
-      expect(dockRect.left, AppSpacing.lg);
-      expect(dockRect.right, 390 - AppSpacing.lg);
+      // Dock baru: kapsul 68pt (8-pt grid), margin 20 di kiri/kanan.
+      expect(dockRect.height, FloatingNavDock.dockHeight);
+      expect(dockRect.left, FloatingNavDock.dockMargin);
+      expect(dockRect.right, 390 - FloatingNavDock.dockMargin);
       expect(844 - dockRect.bottom, AppSpacing.md);
 
       for (final label in ['Beranda', 'Jelajah', 'Tiket Saya', 'Profil']) {

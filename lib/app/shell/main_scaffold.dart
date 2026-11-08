@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../router/route_names.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_radii.dart';
 import '../theme/app_shadows.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -67,6 +66,12 @@ class MainScaffold extends StatelessWidget {
 }
 
 /// Dock kapsul mengambang. Publik agar geometrinya bisa diverifikasi tes.
+///
+/// Geometri (semua bilangan 8-pt grid, diverifikasi `event_grid_layout_test`):
+/// - tinggi 68, radius 30, margin samping 20, inset bawah 12
+/// - item lebar sama (Expanded), target sentuh >= 44x44
+/// - item aktif = kapsul cobalt dengan ikon putih + label tebal (gaya tab bar
+///   iOS 26: kapsul di sekitar ikon, bukan pil besar di belakang seluruh item)
 class FloatingNavDock extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onIndexChanged;
@@ -88,25 +93,47 @@ class FloatingNavDock extends StatelessWidget {
     (label: 'Profil', icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded),
   ];
 
+  /// Tinggi kapsul dock.
+  static const double dockHeight = 68;
+
+  /// Radius sudut kapsul.
+  static const double dockRadius = 30;
+
+  /// Margin kiri/kanan dock terhadap tepi layar.
+  static const double dockMargin = AppSpacing.gutter;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
+        dockMargin,
         0,
-        AppSpacing.lg,
+        dockMargin,
         AppSpacing.md,
       ),
       child: Container(
         key: const ValueKey('nav_dock'),
-        height: 64, // tinggi dock: 64 (8-pt grid) + inset bawah 12
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        height: dockHeight,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: AppRadii.borderPill,
-          border: Border.all(color: AppColors.ink100),
-          boxShadow: AppShadows.dockBar,
+          borderRadius: BorderRadius.circular(dockRadius),
+          border: Border.all(color: AppColors.ink100, width: 1.2),
+          boxShadow: [
+            // Dua lapis: bayangan jauh yang lembut + bayangan dekat yang tegas,
+            // supaya dock benar-benar "mengambang" di atas konten.
+            const BoxShadow(
+              color: Color(0x2412162B),
+              offset: Offset(0, 12),
+              blurRadius: 32,
+            ),
+            const BoxShadow(
+              color: Color(0x1212162B),
+              offset: Offset(0, 3),
+              blurRadius: 9,
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -142,10 +169,12 @@ class _DockItem extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Kapsul ikon aktif: 46x32 (ikon 20 di dalamnya).
+  static const double activeCapsuleWidth = 46;
+  static const double activeCapsuleHeight = 32;
+
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.cobalt : AppColors.ink400;
-
     return Semantics(
       button: true,
       selected: isSelected,
@@ -153,46 +182,61 @@ class _DockItem extends StatelessWidget {
       child: InkWell(
         key: ValueKey('nav_dock_item_$label'),
         onTap: onTap,
-        borderRadius: AppRadii.borderPill,
+        borderRadius: BorderRadius.circular(24),
         splashColor: AppColors.cobalt.withValues(alpha: 0.05),
-        child: Center(
-          child: AnimatedContainer(
-            duration: AppDurations.base,
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.cobaltLight : Colors.transparent,
-              borderRadius: AppRadii.borderPill,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedSwitcher(
-                  duration: AppDurations.fast,
-                  child: Icon(
-                    isSelected ? activeIcon : icon,
-                    key: ValueKey(isSelected),
-                    color: color,
-                    size: 22,
+        highlightColor: AppColors.cobalt.withValues(alpha: 0.03),
+        child: SizedBox(
+          height: 56,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Kapsul ikon: tumbuh + terisi cobalt saat aktif (iOS 26 style).
+              AnimatedContainer(
+                duration: AppDurations.base,
+                curve: Curves.easeOutCubic,
+                width: isSelected ? activeCapsuleWidth : 38,
+                height: isSelected ? activeCapsuleHeight : 30,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.cobalt : Colors.transparent,
+                  borderRadius: BorderRadius.circular(activeCapsuleHeight / 2),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.cobalt.withValues(alpha: 0.32),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: AppDurations.fast,
+                    child: Icon(
+                      isSelected ? activeIcon : icon,
+                      key: ValueKey(isSelected),
+                      size: isSelected ? 20 : 23,
+                      color: isSelected ? Colors.white : AppColors.ink400,
+                    ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
+              ),
+              const SizedBox(height: 3),
+              AnimatedDefaultTextStyle(
+                duration: AppDurations.fast,
+                style: AppTypography.micro.copyWith(
+                  fontSize: 10,
+                  letterSpacing: 0,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  color: isSelected ? AppColors.cobalt : AppColors.ink400,
+                ),
+                child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.micro.copyWith(
-                    fontSize: 10,
-                    letterSpacing: 0,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                    color: color,
-                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
