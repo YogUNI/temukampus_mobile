@@ -71,6 +71,9 @@ class AuthRemoteDataSource {
           'nim': nim.trim(),
           'password': password,
           'password_confirmation': passwordConfirmation,
+          // Server menegakkan rule `accepted`; layar registrasi sudah
+          // memblokir submit sebelum kotak S&K dicentang.
+          'terms_accepted': true,
         },
       );
 
@@ -108,6 +111,7 @@ class AuthRemoteDataSource {
           'institution_name': institutionName.trim(),
           'password': password,
           'password_confirmation': passwordConfirmation,
+          'terms_accepted': true,
         },
       );
 
