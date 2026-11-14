@@ -19,7 +19,30 @@ class NetworkException extends AppException {
 
 class AuthException extends AppException {
   final String? errorCode;
-  const AuthException([super.message = 'Sesi Anda telah berakhir, silakan masuk kembali.', this.errorCode, super.statusCode = 401]);
+
+  /// Body galat mentah dari backend (mis. `data.user` saat akun ditangguhkan).
+  final Map<String, dynamic>? payload;
+
+  const AuthException([
+    super.message = 'Sesi Anda telah berakhir, silakan masuk kembali.',
+    this.errorCode,
+    super.statusCode = 401,
+    this.payload,
+  ]);
+}
+
+/// Akun ditangguhkan (HTTP 403 `ACCOUNT_SUSPENDED`).
+///
+/// Dipisahkan dari [AuthException] agar UI bisa menampilkan dialog pemblokiran
+/// beserta alasan dari admin, bukan sekadar galat di field login.
+class SuspendedAccountException extends AppException {
+  /// Data pengguna yang dikirim backend pada `data.user` (bila ada).
+  final Map<String, dynamic>? userJson;
+
+  const SuspendedAccountException(
+    String message, {
+    this.userJson,
+  }) : super(message, 403);
 }
 
 class ValidationException extends AppException {

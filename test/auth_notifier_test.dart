@@ -1,14 +1,14 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:dio/dio.dart';
-import 'package:temukampus_mobile/core/network/api_client.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:temukampus_mobile/core/storage/secure_storage_service.dart';
 import 'package:temukampus_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:temukampus_mobile/features/auth/data/repositories/auth_repository.dart';
 import 'package:temukampus_mobile/features/auth/presentation/controllers/auth_notifier.dart';
 import 'package:temukampus_mobile/features/auth/presentation/controllers/auth_state.dart';
 
-// In-memory fake secure storage for unit testing
+import 'helpers/fake_api.dart';
+
+/// Penyimpanan aman palsu (tanpa platform channel).
 class FakeSecureStorage extends Fake implements FlutterSecureStorage {
   final Map<String, String> _store = {};
 
@@ -39,9 +39,8 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     WebOptions? webOptions,
     MacOsOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async {
-    return _store[key];
-  }
+  }) async =>
+      _store[key];
 
   @override
   Future<void> delete({
@@ -71,17 +70,43 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
 
 void main() {
   late AuthNotifier authNotifier;
-  late AuthRepository authRepository;
   late SecureStorageService storageService;
+  late FakeApiAdapter adapter;
 
-  setUp(() {
-    final fakeStorage = FakeSecureStorage();
-    storageService = SecureStorageService(storage: fakeStorage);
-    final apiClient = ApiClient(Dio());
-    final remoteDataSource = AuthRemoteDataSource(apiClient);
-    authRepository = AuthRepository(remoteDataSource, storageService);
-    authNotifier = AuthNotifier(authRepository);
-  });
+  /// Seluruh respons memakai fixture hasil rekaman API v1 sungguhan.
+  void buildNotifier({Map<String, dynamic>? loginBody, int loginStatus = 200}) {
+    adapter = FakeApiAdapter([
+      FakeRoute(
+        method: 'POST',
+        path: '/auth/login',
+        body: loginBody ?? apiFixture('auth_login.json'),
+        status: loginStatus,
+      ),
+      FakeRoute(
+        method: 'POST',
+        path: '/auth/register',
+        body: apiFixture('auth_register.json'),
+        status: 201,
+      ),
+      FakeRoute(
+        method: 'POST',
+        path: '/auth/verify-email-code',
+        body: apiFixture('auth_verify_email.json'),
+      ),
+      FakeRoute(method: 'POST', path: '/auth/resend-email-code', body: {
+        'success': true,
+        'message': 'Kode verifikasi baru telah dikirimkan ke emailmu.',
+      }),
+      FakeRoute(method: 'POST', path: '/auth/logout', body: apiFixture('auth_logout.json')),
+      FakeRoute(method: 'GET', path: '/auth/me', body: apiFixture('auth_me.json')),
+    ]);
+
+    storageService = SecureStorageService(storage: FakeSecureStorage());
+    final remoteDataSource = AuthRemoteDataSource(fakeApiClient(adapter));
+    authNotifier = AuthNotifier(AuthRepository(remoteDataSource, storageService));
+  }
+
+  setUp(buildNotifier);
 
   group('AuthNotifier State Machine Tests', () {
     test('Kondisi awal state adalah initial', () {
@@ -93,32 +118,51 @@ void main() {
       expect(authNotifier.state.status, equals(AuthStatus.unauthenticated));
     });
 
-    test('login Mahasiswa UMB dengan mock fallback berhasil authenticated', () async {
+    test('login memakai respons API nyata dan menyimpan token', () async {
       final success = await authNotifier.login(
-        login: '41524010001',
-        password: 'Password123!',
+        login: 'peserta1@example.test',
+        password: 'password',
       );
 
       expect(success, isTrue);
       expect(authNotifier.state.status, equals(AuthStatus.authenticated));
-      expect(authNotifier.state.user?.name, equals('Yoga Gustira'));
-      expect(authNotifier.state.user?.nim, equals('41524010001'));
-      expect(authNotifier.state.user?.academicSummary, equals("Teknik Informatika '24"));
+      expect(authNotifier.state.user?.name, equals('Peserta 1'));
+      expect(authNotifier.state.user?.nim, equals('41521000001'));
+      expect(authNotifier.state.user?.studyProgram?.name, equals('Teknik Sipil'));
+      expect(authNotifier.state.user?.cohortYear, equals(2021));
+      expect(await storageService.getAccessToken(), equals('test-token'));
+      expect(adapter.requests, contains('POST /auth/login'));
     });
 
-    test('login akun suspended mendeteksi status suspended dan menyimpan alasan', () async {
+    test('login akun ditangguhkan menampilkan status suspended + alasan', () async {
+      buildNotifier(loginBody: apiFixture('auth_suspended.json'), loginStatus: 403);
+
       final success = await authNotifier.login(
-        login: '41524010999',
-        password: 'Password123!',
+        login: 'peserta1@example.test',
+        password: 'password',
       );
 
       expect(success, isFalse);
       expect(authNotifier.state.status, equals(AuthStatus.suspended));
       expect(authNotifier.state.isSuspended, isTrue);
       expect(authNotifier.state.errorMessage, contains('dinonaktifkan sementara'));
+      expect(await storageService.getAccessToken(), isNull);
     });
 
-    test('registerUmb berhasil dan meminta verifikasi email', () async {
+    test('login dengan kredensial salah menempelkan galat pada field login', () async {
+      buildNotifier(loginBody: apiFixture('auth_login_invalid.json'), loginStatus: 422);
+
+      final success = await authNotifier.login(
+        login: 'salah@example.test',
+        password: 'salah123',
+      );
+
+      expect(success, isFalse);
+      expect(authNotifier.state.status, equals(AuthStatus.error));
+      expect(authNotifier.state.firstErrorFor('login'), isNotNull);
+    });
+
+    test('registerUmb meminta verifikasi email', () async {
       final success = await authNotifier.registerUmb(
         name: 'Mahasiswa Baru',
         email: 'maba@mercubuana.ac.id',
@@ -131,36 +175,43 @@ void main() {
       expect(success, isTrue);
       expect(authNotifier.state.status, equals(AuthStatus.needsEmailVerification));
       expect(authNotifier.state.user?.email, equals('maba@mercubuana.ac.id'));
+      expect(await storageService.getAccessToken(), equals('test-token'));
     });
 
-    test('verifyEmail dengan kode 6 digit berhasil mengubah status ke authenticated', () async {
-      // Registrasi terlebih dahulu
+    test('verifyEmail mengubah status ke authenticated', () async {
       await authNotifier.registerUmb(
-        name: 'Budi Santoso',
-        email: 'budi@mercubuana.ac.id',
-        phone: '081234567890',
-        nim: '41524010099',
+        name: 'Mahasiswa Baru',
+        email: 'maba@mercubuana.ac.id',
+        phone: '081299998888',
+        nim: '41824010055',
         password: 'Password123!',
         passwordConfirmation: 'Password123!',
       );
 
-      // Verifikasi kode
       final verified = await authNotifier.verifyEmail('123456');
+
       expect(verified, isTrue);
       expect(authNotifier.state.status, equals(AuthStatus.authenticated));
       expect(authNotifier.state.user?.emailVerified, isTrue);
+      expect(adapter.requests, contains('POST /auth/verify-email-code'));
     });
 
     test('logout menghapus token dan mengubah status ke unauthenticated', () async {
-      // Login dulu
-      await authNotifier.login(login: '41524010001', password: 'Password123!');
+      await authNotifier.login(login: 'peserta1@example.test', password: 'password');
       expect(authNotifier.state.status, equals(AuthStatus.authenticated));
 
-      // Logout
       await authNotifier.logout();
+
       expect(authNotifier.state.status, equals(AuthStatus.unauthenticated));
       expect(await storageService.getAccessToken(), isNull);
+      expect(adapter.requests, contains('POST /auth/logout'));
+    });
+
+    test('handleSessionExpired mengembalikan pengguna ke login dengan pesan jelas', () {
+      authNotifier.handleSessionExpired();
+
+      expect(authNotifier.state.status, equals(AuthStatus.unauthenticated));
+      expect(authNotifier.state.errorMessage, contains('Sesi Anda telah berakhir'));
     });
   });
 }
-

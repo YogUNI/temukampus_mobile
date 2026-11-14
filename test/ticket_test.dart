@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:temukampus_mobile/core/network/api_client.dart';
 import 'package:temukampus_mobile/features/tickets/data/datasources/tickets_remote_datasource.dart';
 import 'package:temukampus_mobile/features/tickets/data/models/ticket_model.dart';
 import 'package:temukampus_mobile/features/tickets/data/repositories/tickets_repository.dart';
 import 'package:temukampus_mobile/features/tickets/presentation/controllers/tickets_controller.dart';
 import 'package:temukampus_mobile/features/tickets/presentation/controllers/ticket_detail_controller.dart';
+
+import 'helpers/fake_api.dart';
 
 void main() {
   setUp(() {
@@ -92,10 +92,29 @@ void main() {
     late TicketsController controller;
     late TicketsRepository repository;
 
+    /// Tab dipetakan server (TicketFeed); fixture = rekaman API v1 sungguhan.
+    TicketsRepository buildRepository() {
+      final adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'GET',
+          path: '/tickets',
+          query: {'tab': 'pending'},
+          body: apiFixture('tickets_pending.json'),
+        ),
+        FakeRoute(
+          method: 'GET',
+          path: '/tickets',
+          query: {'tab': 'cancelled'},
+          body: apiFixture('tickets_cancelled.json'),
+        ),
+        FakeRoute(method: 'GET', path: '/tickets', body: apiFixture('tickets_completed.json')),
+      ]);
+
+      return TicketsRepository(TicketsRemoteDataSource(fakeApiClient(adapter)));
+    }
+
     setUp(() {
-      final apiClient = ApiClient(Dio());
-      final remoteDataSource = TicketsRemoteDataSource(apiClient);
-      repository = TicketsRepository(remoteDataSource);
+      repository = buildRepository();
       controller = TicketsController(repository);
     });
 
@@ -106,6 +125,7 @@ void main() {
       expect(controller.state.isLoading, isFalse);
       expect(controller.state.tickets.isNotEmpty, isTrue);
       expect(controller.state.tickets.every((t) => t.isConfirmed), isTrue);
+      expect(controller.state.tickets.first.ticketCode, equals('TK-XQMKQQ'));
     });
 
     test('Ganti tab ke verifikasi (pending)', () async {
@@ -122,18 +142,29 @@ void main() {
     late TicketsRepository repository;
 
     setUp(() {
-      final apiClient = ApiClient(Dio());
-      final remoteDataSource = TicketsRemoteDataSource(apiClient);
-      repository = TicketsRepository(remoteDataSource);
-      controller = TicketDetailController(repository, 'TK-7F3KQ9');
+      final adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'GET',
+          path: RegExp(r'^/tickets/[A-Z0-9-]+$'),
+          body: apiFixture('ticket_detail.json'),
+        ),
+        FakeRoute(
+          method: 'DELETE',
+          path: RegExp(r'^/tickets/[A-Z0-9-]+$'),
+          body: {'success': true, 'message': 'Pendaftaran berhasil dibatalkan.'},
+        ),
+      ]);
+
+      repository = TicketsRepository(TicketsRemoteDataSource(fakeApiClient(adapter)));
+      controller = TicketDetailController(repository, 'TK-XQMKQQ');
     });
 
-    test('Memuat rincian tiket TK-7F3KQ9', () async {
+    test('Memuat rincian tiket beserta akses grup', () async {
       await controller.loadDetail();
 
       expect(controller.state.isLoading, isFalse);
       expect(controller.state.ticket, isNotNull);
-      expect(controller.state.ticket!.ticketCode, equals('TK-7F3KQ9'));
+      expect(controller.state.ticket!.ticketCode, equals('TK-XQMKQQ'));
       expect(controller.state.ticket!.unlockedAccess.canAccessLinks, isTrue);
     });
 

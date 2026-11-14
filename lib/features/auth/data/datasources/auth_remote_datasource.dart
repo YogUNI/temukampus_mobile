@@ -1,9 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/nim_parser.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_model.dart';
 
@@ -40,14 +39,10 @@ class AuthRemoteDataSource {
         token: data['token'] as String,
         user: UserModel.fromJson(data['user'] as Map<String, dynamic>),
       );
-    } on NetworkException {
-      debugPrint('[AuthRemoteDataSource] Backend offline, menggunakan Mock Fallback');
-      return _mockLogin(login, password);
     } on AppException {
       rethrow;
-    } catch (e) {
-      debugPrint('[AuthRemoteDataSource] Fallback Dev Mock Login');
-      return _mockLogin(login, password);
+    } on DioException catch (e) {
+      throw _mapLoginError(e);
     }
   }
 
@@ -82,12 +77,10 @@ class AuthRemoteDataSource {
         token: data['token'] as String,
         user: UserModel.fromJson(data['user'] as Map<String, dynamic>),
       );
-    } on NetworkException {
-      return _mockRegisterUmb(name, email, phone, nim);
     } on AppException {
       rethrow;
-    } catch (_) {
-      return _mockRegisterUmb(name, email, phone, nim);
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
@@ -120,12 +113,10 @@ class AuthRemoteDataSource {
         token: data['token'] as String,
         user: UserModel.fromJson(data['user'] as Map<String, dynamic>),
       );
-    } on NetworkException {
-      return _mockRegisterExternal(name, email, phone, institutionName);
     } on AppException {
       rethrow;
-    } catch (_) {
-      return _mockRegisterExternal(name, email, phone, institutionName);
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
@@ -135,16 +126,17 @@ class AuthRemoteDataSource {
       final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.me);
       final data = response.data!['data'] as Map<String, dynamic>;
       return UserModel.fromJson(data);
-    } on NetworkException {
-      return _mockDefaultUser();
     } on AppException {
       rethrow;
-    } catch (_) {
-      return _mockDefaultUser();
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
-  /// Verifikasi kode 6 angka email
+  /// Verifikasi kode 6 angka email.
+  ///
+  /// Kode salah/kedaluwarsa/terkunci dikembalikan backend sebagai HTTP 422
+  /// dengan `errors.code`, sehingga UI bisa menempelkannya ke input kode.
   Future<String> verifyEmailCode(String code) async {
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
@@ -152,36 +144,24 @@ class AuthRemoteDataSource {
         data: {'code': code.trim()},
       );
       return response.data?['message'] as String? ?? 'Email berhasil diverifikasi.';
-    } on NetworkException {
-      if (code == '123456' || code.length == 6) {
-        return 'Email berhasil diverifikasi (Dev Mock).';
-      }
-      throw const ValidationException(
-        message: 'Kode verifikasi tidak valid.',
-        fieldErrors: {'code': ['Kode 6 digit yang Anda masukkan salah.']},
-      );
     } on AppException {
       rethrow;
-    } catch (_) {
-      if (code == '123456' || code.length == 6) {
-        return 'Email berhasil diverifikasi (Dev Mock).';
-      }
-      throw const ValidationException(
-        message: 'Kode verifikasi tidak valid.',
-        fieldErrors: {'code': ['Kode 6 digit yang Anda masukkan salah.']},
-      );
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
-  /// Kirim ulang kode verifikasi email
+  /// Kirim ulang kode verifikasi email.
   Future<String> resendEmailCode() async {
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.resendEmailCode,
       );
       return response.data?['message'] as String? ?? 'Kode verifikasi baru telah dikirimkan.';
-    } catch (_) {
-      return 'Kode verifikasi baru telah dikirimkan ke email Anda.';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
@@ -194,125 +174,31 @@ class AuthRemoteDataSource {
     }
   }
 
-  // === Dev Mock Generator (Kredensial Realistis Mahasiswa UMB) ===
+  /// Login butuh satu perlakuan khusus: 403 `ACCOUNT_SUSPENDED` diterjemahkan
+  /// menjadi [SuspendedAccountException] agar UI menampilkan dialog pemblokiran
+  /// beserta alasan admin, bukan galat di field login.
+  AppException _mapLoginError(DioException e) {
+    final error = e.error;
 
-  static UserModel _mockDefaultUser({bool suspended = false}) {
-    return UserModel(
-      id: 14,
-      name: 'Yoga Gustira',
-      email: 'yoga@mercubuana.ac.id',
-      role: 'user',
-      accountType: 'umb',
-      nim: '41524010001',
-      phone: '081234567890',
-      avatarUrl: null,
-      studyProgram: const StudyProgramModel(
-        id: 1,
-        code: '415',
-        name: 'Teknik Informatika',
-      ),
-      cohortYear: 2024,
-      emailVerified: true,
-      isOrganizer: false,
-      status: suspended ? 'suspended' : 'active',
-      suspensionReason: suspended
-          ? 'Akun Anda dinonaktifkan sementara karena pelanggaran tata tertib kepesertaan acara kampus.'
-          : null,
-    );
-  }
+    if (error is AuthException && error.errorCode == 'ACCOUNT_SUSPENDED') {
+      final user = error.payload?['user'];
 
-  AuthResponseModel _mockLogin(String login, String password) {
-    final cleaned = login.trim().toLowerCase();
-
-    // Akun uji coba tersuspend
-    if (cleaned == '41524010999' || cleaned == 'suspended@mercubuana.ac.id') {
-      return AuthResponseModel(
-        token: 'mock_token_suspended',
-        user: _mockDefaultUser(suspended: true),
+      return SuspendedAccountException(
+        error.message,
+        userJson: user is Map<String, dynamic> ? user : null,
       );
     }
 
-    // Login default realistis mahasiswa UMB
-    if (cleaned == '41524010001' ||
-        cleaned == 'yoga@mercubuana.ac.id' ||
-        cleaned.contains('@') ||
-        cleaned.length == 11) {
-      final nimParse = NimParser.parse(cleaned);
-      final programName = nimParse.programName ?? 'Teknik Informatika';
-      final programCode = nimParse.programCode ?? '415';
-      final cohortYear = nimParse.cohortYear ?? 2024;
-
-      return AuthResponseModel(
-        token: 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}',
-        user: UserModel(
-          id: 14,
-          name: 'Yoga Gustira',
-          email: cleaned.contains('@') ? cleaned : 'yoga@mercubuana.ac.id',
-          role: 'user',
-          accountType: 'umb',
-          nim: nimParse.isValid ? nimParse.rawNim : '41524010001',
-          phone: '081234567890',
-          studyProgram: StudyProgramModel(
-            id: 1,
-            code: programCode,
-            name: programName,
-          ),
-          cohortYear: cohortYear,
-          emailVerified: true,
-          isOrganizer: false,
-          status: 'active',
-        ),
-      );
-    }
-
-    throw const ValidationException(
-      message: 'Kredensial yang diberikan tidak cocok dengan data kami.',
-      fieldErrors: {
-        'login': ['Email atau NIM tidak terdaftar.'],
-      },
-    );
+    return _asAppException(e);
   }
 
-  AuthResponseModel _mockRegisterUmb(String name, String email, String phone, String nim) {
-    final nimParse = NimParser.parse(nim);
-    return AuthResponseModel(
-      token: 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}',
-      user: UserModel(
-        id: 99,
-        name: name,
-        email: email,
-        role: 'user',
-        accountType: 'umb',
-        nim: nim,
-        phone: phone,
-        studyProgram: StudyProgramModel(
-          id: 1,
-          code: nimParse.programCode ?? '415',
-          name: nimParse.programName ?? 'Teknik Informatika',
-        ),
-        cohortYear: nimParse.cohortYear ?? 2024,
-        emailVerified: false,
-        isOrganizer: false,
-        status: 'active',
-      ),
-    );
-  }
+  AppException _asAppException(DioException e) {
+    final error = e.error;
+    if (error is AppException) return error;
 
-  AuthResponseModel _mockRegisterExternal(String name, String email, String phone, String institutionName) {
-    return AuthResponseModel(
-      token: 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}',
-      user: UserModel(
-        id: 100,
-        name: name,
-        email: email,
-        role: 'user',
-        accountType: 'external',
-        phone: phone,
-        institutionName: institutionName,
-        emailVerified: false,
-        isOrganizer: false,
-        status: 'active',
-      ),
+    return ServerException(
+      'Tidak dapat menghubungi server TemuKampus. Periksa koneksi lalu coba lagi.',
+      e.response?.statusCode,
     );
   }
 }

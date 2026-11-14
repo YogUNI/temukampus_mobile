@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -49,6 +50,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _repository.login(login: login, password: password);
       _handleUserState(user);
       return state.status != AuthStatus.suspended && state.status != AuthStatus.error;
+    } on SuspendedAccountException catch (e) {
+      // Akun ditangguhkan: tampilkan dialog pemblokiran dengan alasan admin.
+      final json = e.userJson;
+      final user = json != null ? UserModel.fromJson(json) : _placeholderUser(login);
+
+      state = AuthState.suspended(user, e.message);
+      return false;
     } on ValidationException catch (e) {
       state = AuthState.error(e.message, e.fieldErrors);
       return false;
@@ -160,6 +168,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState.unauthenticated();
   }
 
+  /// Dipanggil interceptor Dio saat backend menjawab HTTP 401.
+  ///
+  /// Token lokal sudah dihapus oleh interceptor; di sini cukup mengubah state
+  /// agar router memindahkan pengguna ke `/login` dengan pesan sesi berakhir.
+  void handleSessionExpired() {
+    if (state.status == AuthStatus.unauthenticated) return;
+    state = AuthState.sessionExpired();
+  }
+
   void _handleUserState(user) {
     if (user.isSuspended) {
       state = AuthState.suspended(
@@ -173,5 +190,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthState.authenticated(user);
     }
   }
-}
 
+  /// Pengguna sementara saat backend menolak login tanpa menyertakan data
+  /// pengguna (dipakai hanya untuk menampilkan dialog pemblokiran).
+  UserModel _placeholderUser(String login) => UserModel(
+        id: 0,
+        name: login,
+        email: login.contains('@') ? login : '',
+        status: 'suspended',
+      );
+}

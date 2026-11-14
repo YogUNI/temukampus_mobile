@@ -106,7 +106,6 @@ class RegistrationController extends StateNotifier<RegistrationState> {
       final result = await _repository.submitRegistration(
         slug: _slug,
         termsAccepted: state.termsAccepted,
-        isPaid: isPaid,
         proofData: state.selectedProof,
         onProgress: (sent, total) {
           if (total > 0) {

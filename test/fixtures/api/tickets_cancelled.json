@@ -1,0 +1,116 @@
+{
+  "data": [
+    {
+      "ticket_code": "TK-V6ZG3Z",
+      "status": "cancelled",
+      "status_label": "Dibatalkan",
+      "participant": {
+        "name": "Peserta 1",
+        "nim": "41521000001",
+        "study_program": "Teknik Sipil",
+        "cohort_year": 2021
+      },
+      "event": {
+        "title": "Orientasi Kehidupan Kampus",
+        "slug": "bem-orientasi-kampus",
+        "poster_url": null,
+        "start_at": "2026-12-12T15:35:22+07:00",
+        "end_at": "2026-12-12T18:35:22+07:00",
+        "location": "Gedung A UMB",
+        "format": "offline",
+        "wa_group_url": null,
+        "meeting_url": null,
+        "can_access_links": false
+      },
+      "unlocked_access": {
+        "can_access_links": false,
+        "wa_group_url": null,
+        "meeting_url": null
+      },
+      "amount_paid": 0,
+      "amount_due": 0,
+      "unique_code": 0,
+      "revision_notes": null,
+      "checked_in_at": null,
+      "registered_at": "2026-11-13T21:38:51+07:00"
+    },
+    {
+      "ticket_code": "TK-WPR8FY",
+      "status": "cancelled",
+      "status_label": "Dibatalkan",
+      "participant": {
+        "name": "Peserta 1",
+        "nim": "41521000001",
+        "study_program": "Teknik Sipil",
+        "cohort_year": 2021
+      },
+      "event": {
+        "title": "Workshop UI/UX untuk Pemula",
+        "slug": "workshop-ui-ux",
+        "poster_url": null,
+        "start_at": "2026-11-11T15:34:48+07:00",
+        "end_at": "2026-11-11T18:34:48+07:00",
+        "location": "Gedung B UMB",
+        "format": "offline",
+        "wa_group_url": null,
+        "meeting_url": null,
+        "can_access_links": false
+      },
+      "unlocked_access": {
+        "can_access_links": false,
+        "wa_group_url": null,
+        "meeting_url": null
+      },
+      "amount_paid": 25000,
+      "amount_due": 25000,
+      "unique_code": 0,
+      "revision_notes": null,
+      "checked_in_at": null,
+      "registered_at": "2026-10-28T15:35:25+07:00"
+    }
+  ],
+  "links": {
+    "first": "http://temukampus.test/api/v1/tickets?tab=cancelled&page=1",
+    "last": "http://temukampus.test/api/v1/tickets?tab=cancelled&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Sebelumnya",
+        "page": null,
+        "active": false
+      },
+      {
+        "url": "http://temukampus.test/api/v1/tickets?tab=cancelled&page=1",
+        "label": "1",
+        "page": 1,
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Berikutnya &raquo;",
+        "page": null,
+        "active": false
+      }
+    ],
+    "path": "http://temukampus.test/api/v1/tickets",
+    "per_page": 15,
+    "to": 2,
+    "total": 2
+  },
+  "success": true,
+  "tab": "dibatalkan",
+  "counts": {
+    "akan-datang": 0,
+    "menunggu": 1,
+    "selesai": 2,
+    "dibatalkan": 2,
+    "revision": 0
+  }
+}

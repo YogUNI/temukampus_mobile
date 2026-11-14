@@ -1,0 +1,15 @@
+{
+  "status": "ALREADY_CHECKED_IN",
+  "message": "Tiket ini sudah check-in pada pukul 00:20 WIB oleh Panitia BEM FASILKOM.",
+  "data": {
+    "ticket_code": "TK-BU44Z4",
+    "checked_in_at": "2026-11-14T00:20:00+07:00",
+    "first_checked_in_at": "2026-11-14T00:20:00+07:00",
+    "participant": {
+      "name": "Peserta 51",
+      "nim": "41121000051",
+      "study_program": "Psikologi",
+      "cohort_year": 2021
+    }
+  }
+}

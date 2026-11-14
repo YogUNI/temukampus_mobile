@@ -51,6 +51,15 @@ class AuthState {
         validationErrors: errors,
       );
 
+  /// Sesi berakhir (HTTP 401): token lokal sudah dihapus interceptor, pengguna
+  /// dikembalikan ke halaman masuk dengan pesan yang jelas (AGENTS.md §Code
+  /// Quality #4). Status sengaja `unauthenticated` agar router me-redirect ke
+  /// `/login` dari rute mana pun yang butuh sesi.
+  factory AuthState.sessionExpired() => const AuthState(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Sesi Anda telah berakhir, silakan masuk kembali.',
+      );
+
   bool get isAuthenticated => status == AuthStatus.authenticated && user != null;
   bool get isAuthenticating => status == AuthStatus.authenticating;
   bool get isSuspended => status == AuthStatus.suspended;

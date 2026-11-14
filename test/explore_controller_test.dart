@@ -1,17 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dio/dio.dart';
-import 'package:temukampus_mobile/core/network/api_client.dart';
 import 'package:temukampus_mobile/features/events/data/datasources/events_remote_datasource.dart';
 import 'package:temukampus_mobile/features/events/data/repositories/events_repository.dart';
 import 'package:temukampus_mobile/features/events/presentation/controllers/events_catalog_controller.dart';
 
+import 'helpers/fake_api.dart';
+
+FakeApiAdapter buildAdapter() => FakeApiAdapter([
+      FakeRoute(
+        method: 'GET',
+        path: '/events',
+        query: {'format': 'offline'},
+        body: apiFixture('events_offline.json'),
+      ),
+      FakeRoute(method: 'GET', path: '/events', body: apiFixture('events_index.json')),
+      FakeRoute(method: 'GET', path: '/categories', body: apiFixture('categories.json')),
+    ]);
+
 void main() {
   late EventsCatalogController controller;
+  late FakeApiAdapter adapter;
 
   setUp(() {
-    final apiClient = ApiClient(Dio());
-    final remoteDataSource = EventsRemoteDataSource(apiClient);
-    final repository = EventsRepository(remoteDataSource);
+    adapter = buildAdapter();
+    final repository = EventsRepository(EventsRemoteDataSource(fakeApiClient(adapter)));
     controller = EventsCatalogController(repository);
   });
 
@@ -43,6 +54,7 @@ void main() {
       await controller.fetchEvents();
 
       expect(controller.state.maxPrice, 30000);
+      expect(controller.state.events.length, lessThan(allCount));
       expect(
         controller.state.events.every((e) => e.isFree || e.price <= 30000),
         isTrue,
@@ -65,11 +77,25 @@ void main() {
       expect(controller.state.organizationSlugs, [targetOrg.slug]);
       expect(controller.state.events, isNotEmpty);
       expect(
-        controller.state.events.every(
-          (e) => e.organization.slug == targetOrg.slug,
-        ),
+        controller.state.events.every((e) => e.organization.slug == targetOrg.slug),
         isTrue,
       );
+    });
+
+    test('format offline dikirim ke server sebagai query format', () async {
+      await controller.init();
+
+      controller.applyAdvancedFilters(
+        format: 'offline',
+        onlyFree: false,
+        onlySkp: false,
+        suitableForMe: false,
+        organizationSlugs: const [],
+      );
+      await controller.fetchEvents();
+
+      expect(controller.state.selectedFormat, 'offline');
+      expect(controller.state.events.every((e) => e.format == 'offline'), isTrue);
     });
 
     test('resetFilters menghapus maxPrice & ormawa', () async {
@@ -87,6 +113,7 @@ void main() {
       expect(controller.state.hasActiveFilter, isTrue);
 
       controller.resetFilters();
+
       expect(controller.state.hasActiveFilter, isFalse);
       expect(controller.state.maxPrice, isNull);
       expect(controller.state.organizationSlugs, isEmpty);
@@ -108,6 +135,7 @@ void main() {
 
       controller.setQuickFilterTag('Semua');
       await controller.fetchEvents();
+
       expect(controller.state.hasActiveFilter, isFalse);
     });
   });

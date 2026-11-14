@@ -1,0 +1,85 @@
+{
+  "data": [
+    {
+      "id": 6,
+      "title": "Orientasi Kehidupan Kampus",
+      "slug": "bem-orientasi-kampus",
+      "summary": "Acara kemahasiswaan UMB: Orientasi Kehidupan Kampus.",
+      "description": "Deskripsi demo untuk Orientasi Kehidupan Kampus. Data ini dihasilkan DemoSeeder dan bukan acara sungguhan.",
+      "poster_url": null,
+      "poster": {
+        "original": null,
+        "hero": null,
+        "medium": null,
+        "card": null,
+        "thumb": null
+      },
+      "format": "offline",
+      "start_at": "2026-12-12T15:35:22+07:00",
+      "end_at": "2026-12-12T18:35:22+07:00",
+      "registration_open_at": "2026-10-26T15:35:22+07:00",
+      "registration_close_at": "2026-12-12T15:35:22+07:00",
+      "location": "Gedung A UMB",
+      "location_address": "Jl. Meruya Selatan No. 1, Jakarta Barat",
+      "is_online": false,
+      "is_paid": false,
+      "price": 0,
+      "formatted_price": "Gratis",
+      "skp_points": 0,
+      "has_certificate": true,
+      "audience": "public",
+      "quota": null,
+      "registered_count": 23,
+      "remaining_quota": null,
+      "is_full": false,
+      "organization": {
+        "id": 46,
+        "name": "BEM Universitas",
+        "slug": "bem-universitas",
+        "logo_url": null
+      },
+      "category": "Pelatihan",
+      "category_slug": "pelatihan",
+      "bank_name": null,
+      "bank_account_number": null,
+      "bank_account_name": null,
+      "qris_image_url": null,
+      "published_at": "2026-10-26T15:35:22+07:00"
+    }
+  ],
+  "links": {
+    "first": "http://temukampus.test/api/v1/events?free_only=1&per_page=12&page=1",
+    "last": "http://temukampus.test/api/v1/events?free_only=1&per_page=12&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Sebelumnya",
+        "page": null,
+        "active": false
+      },
+      {
+        "url": "http://temukampus.test/api/v1/events?free_only=1&per_page=12&page=1",
+        "label": "1",
+        "page": 1,
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Berikutnya &raquo;",
+        "page": null,
+        "active": false
+      }
+    ],
+    "path": "http://temukampus.test/api/v1/events",
+    "per_page": 12,
+    "to": 1,
+    "total": 1
+  }
+}

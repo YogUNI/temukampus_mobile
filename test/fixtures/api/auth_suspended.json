@@ -1,0 +1,29 @@
+{
+  "success": false,
+  "message": "Akun Anda dinonaktifkan sementara oleh admin kampus. Hubungi BAAK untuk informasi lebih lanjut.",
+  "error_code": "ACCOUNT_SUSPENDED",
+  "data": {
+    "user": {
+      "id": 10,
+      "name": "Peserta 1",
+      "email": "peserta1@example.test",
+      "role": "user",
+      "account_type": "umb",
+      "nim": "41521000001",
+      "phone": "087897518632",
+      "avatar_url": "http://temukampus.test/storage/avatars/LHl7Utwcn4TYW3isEv3AxAWPId8XThzqXU1EFe8x.webp",
+      "institution_name": null,
+      "study_program": {
+        "id": 17,
+        "code": "411",
+        "name": "Teknik Sipil"
+      },
+      "cohort_year": 2021,
+      "email_verified": true,
+      "is_organizer": false,
+      "managed_organizations": [],
+      "status": "suspended",
+      "suspension_reason": "Akun dinonaktifkan sementara oleh admin kampus."
+    }
+  }
+}

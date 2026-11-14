@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 7,
+      "title": "Seminar Karier FASILKOM",
+      "slug": "seminar-karier-fasilkom",
+      "location": "Auditorium Tower Lt. 7",
+      "start_at": "2026-11-14T02:00:00+07:00",
+      "end_at": "2026-11-14T06:00:00+07:00",
+      "total_quota": 20,
+      "registered_count": 19,
+      "attended_count": 0,
+      "organization_name": "BEM FASILKOM"
+    }
+  ]
+}

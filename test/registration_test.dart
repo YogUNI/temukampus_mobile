@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:temukampus_mobile/core/network/api_client.dart';
 import 'package:temukampus_mobile/core/utils/image_compressor.dart';
 import 'package:temukampus_mobile/features/registration/data/datasources/registration_remote_datasource.dart';
 import 'package:temukampus_mobile/features/registration/data/models/registration_model.dart';
 import 'package:temukampus_mobile/features/registration/data/repositories/registration_repository.dart';
 import 'package:temukampus_mobile/features/registration/presentation/controllers/registration_controller.dart';
 import 'package:temukampus_mobile/features/registration/presentation/controllers/registration_state.dart';
+
+import 'helpers/fake_api.dart';
 
 void main() {
   group('Registration Model & Payment Preview Tests', () {
@@ -60,9 +60,24 @@ void main() {
     late RegistrationRepository repository;
 
     setUp(() {
-      final apiClient = ApiClient(Dio());
-      final remoteDataSource = RegistrationRemoteDataSource(apiClient);
-      repository = RegistrationRepository(remoteDataSource);
+      // Fixture hasil rekaman API v1: pratinjau pembayaran & hasil pendaftaran.
+      final adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'GET',
+          path: RegExp(r'^/events/[^/]+/payment-preview$'),
+          body: apiFixture('payment_preview.json'),
+        ),
+        FakeRoute(
+          method: 'POST',
+          path: RegExp(r'^/events/[^/]+/register$'),
+          body: apiFixture('registration_result.json'),
+          status: 201,
+        ),
+      ]);
+
+      repository = RegistrationRepository(
+        RegistrationRemoteDataSource(fakeApiClient(adapter)),
+      );
       controller = RegistrationController(repository, 'seminar-ai-2026');
     });
 

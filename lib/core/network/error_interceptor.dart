@@ -46,6 +46,19 @@ class ErrorInterceptor extends Interceptor {
               'Sesi Anda telah berakhir, silakan masuk kembali.';
           final errorCode = data is Map<String, dynamic> ? data['error_code'] as String? : null;
           appException = AuthException(message, errorCode, statusCode);
+        } else if (statusCode == 403) {
+          // Akun ditangguhkan dikirim dengan kode khusus agar UI bisa
+          // menampilkan dialog pemblokiran beserta alasannya.
+          final map = data is Map<String, dynamic> ? data : const <String, dynamic>{};
+          final message = map['message'] as String? ?? 'Akses ditolak.';
+          final errorCode = map['error_code'] as String?;
+          final payload = map['data'] is Map<String, dynamic>
+              ? map['data'] as Map<String, dynamic>
+              : null;
+
+          appException = errorCode == 'ACCOUNT_SUSPENDED'
+              ? AuthException(message, errorCode, statusCode, payload)
+              : ServerException(message, statusCode);
         } else {
           final message = (data is Map<String, dynamic> ? data['message'] as String? : null) ??
               'Terjadi kesalahan pada server kampus (Kode: $statusCode).';

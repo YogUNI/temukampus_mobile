@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "ticket_price": 35000,
+    "unique_code": 627,
+    "total_amount_due": 35627,
+    "formatted_total": "Rp 35.627",
+    "bank_name": "BCA",
+    "account_number": "1234567890",
+    "account_name": "Kemahasiswaan UMB",
+    "qris_url": null,
+    "can_register": true,
+    "gate_state": "open",
+    "message": null,
+    "registration": null
+  }
+}

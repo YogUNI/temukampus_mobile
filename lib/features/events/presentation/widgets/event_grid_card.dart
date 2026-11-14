@@ -7,6 +7,7 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/app_network_or_asset_image.dart';
+import '../../../../shared/widgets/event_poster_placeholder.dart';
 import '../../data/models/event_model.dart';
 import 'event_grid_metrics.dart';
 
@@ -171,6 +172,11 @@ class _PosterLayer extends StatelessWidget {
         AppNetworkOrAssetImage(
           imagePath: event.posterUrl,
           fit: BoxFit.cover,
+          errorWidget: EventPosterPlaceholder(
+            categorySlug: event.categorySlug,
+            categoryName: event.category,
+            title: event.title,
+          ),
         ),
         // Scrim tipis hanya di bagian atas — cukup membuat badge putih terbaca
         // pada poster terang tanpa menggelapkan fotonya.

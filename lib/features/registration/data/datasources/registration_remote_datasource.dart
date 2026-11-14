@@ -1,9 +1,8 @@
-import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/image_compressor.dart';
 import '../models/registration_model.dart';
 
@@ -12,12 +11,20 @@ final registrationRemoteDataSourceProvider = Provider<RegistrationRemoteDataSour
   return RegistrationRemoteDataSource(apiClient);
 });
 
+/// Sumber data pendaftaran acara — seluruhnya memanggil API v1 nyata.
+///
+/// Tidak ada lagi fallback mock: kegagalan jaringan/validasi diteruskan ke
+/// controller sebagai [AppException] agar UI menampilkan pesan & tombol
+/// "Coba Lagi" yang sebenarnya.
 class RegistrationRemoteDataSource {
   final ApiClient _apiClient;
 
   RegistrationRemoteDataSource(this._apiClient);
 
-  /// Ambil pratinjau nominal transfer & kode unik 3 digit
+  /// Pratinjau nominal transfer + kode unik 3 digit.
+  ///
+  /// Kode unik di sini sudah **direservasi** backend, jadi angka yang tampil
+  /// sama dengan yang akan tercatat saat pendaftaran dikirim.
   Future<PaymentPreviewModel> getPaymentPreview(String slug) async {
     try {
       final response = await _apiClient.get<Map<String, dynamic>>(
@@ -25,20 +32,19 @@ class RegistrationRemoteDataSource {
       );
       final data = response.data!['data'] as Map<String, dynamic>;
       return PaymentPreviewModel.fromJson(data);
-    } on NetworkException {
-      return _getMockPaymentPreview(slug);
     } on AppException {
       rethrow;
-    } catch (_) {
-      return _getMockPaymentPreview(slug);
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
-  /// Kirim formulir pendaftaran & unggah bukti transfer multipart
+  /// Kirim formulir pendaftaran & unggah bukti transfer (multipart).
+  ///
+  /// Status 201 = pendaftaran baru, 200 = idempoten (sudah pernah daftar).
   Future<RegistrationResultModel> submitRegistration({
     required String slug,
     required bool termsAccepted,
-    required bool isPaid,
     PickedImageData? proofData,
     void Function(int sent, int total)? onProgress,
   }) async {
@@ -57,23 +63,21 @@ class RegistrationRemoteDataSource {
       final formData = FormData.fromMap(formMap);
 
       final response = await _apiClient.uploadMultipart<Map<String, dynamic>>(
-        '/events/$slug/register',
+        ApiEndpoints.registerEvent(slug),
         formData: formData,
         onSendProgress: onProgress,
       );
 
       final data = response.data!['data'] as Map<String, dynamic>;
       return RegistrationResultModel.fromJson(data);
-    } on NetworkException {
-      return _mockRegistrationResult(isPaid: isPaid);
     } on AppException {
       rethrow;
-    } catch (_) {
-      return _mockRegistrationResult(isPaid: isPaid);
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
-  /// Unggah ulang bukti transfer saat status revisi
+  /// Unggah ulang bukti transfer saat status `needs_revision`.
   Future<String> resubmitProof({
     required String ticketCode,
     required PickedImageData proofData,
@@ -94,42 +98,22 @@ class RegistrationRemoteDataSource {
       );
 
       return response.data?['message'] as String? ?? 'Bukti pembayaran berhasil diperbarui.';
-    } catch (_) {
-      return 'Bukti pembayaran berhasil dikirimkan kembali (Dev Mock).';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
-  // === Dev Mock Generator Realistis ===
+  /// Jaring pengaman: setiap kegagalan Dio yang belum bertipe jadi
+  /// [AppException] tetap diterjemahkan, tidak pernah ditelan diam-diam.
+  AppException _asAppException(DioException e) {
+    final error = e.error;
+    if (error is AppException) return error;
 
-  PaymentPreviewModel _getMockPaymentPreview(String slug) {
-    const basePrice = 25000;
-    final randomUnique = 100 + Random().nextInt(899); // 3 digit angka unik
-    final total = basePrice + randomUnique;
-
-    return PaymentPreviewModel(
-      ticketPrice: basePrice,
-      uniqueCode: randomUnique,
-      totalAmountDue: total,
-      formattedTotal: AppFormatters.rupiah(total),
-      bankName: 'BCA (Bank Central Asia)',
-      accountNumber: '5410982311',
-      accountName: 'HIMA TEKNIK INFORMATIKA UMB',
-      qrisUrl: null,
-    );
-  }
-
-  RegistrationResultModel _mockRegistrationResult({required bool isPaid}) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final random = Random();
-    final randomCode = List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
-    final ticketCode = 'TK-$randomCode';
-
-    return RegistrationResultModel(
-      ticketCode: ticketCode,
-      status: isPaid ? 'pending_verification' : 'confirmed',
-      statusLabel: isPaid ? 'Menunggu Verifikasi' : 'Terkonfirmasi',
-      amountDue: isPaid ? 25137 : 0,
-      registeredAt: DateTime.now(),
+    return ServerException(
+      'Tidak dapat menghubungi server TemuKampus. Periksa koneksi lalu coba lagi.',
+      e.response?.statusCode,
     );
   }
 }

@@ -1,0 +1,8 @@
+{
+  "message": "NIM/email atau kata sandi salah.",
+  "errors": {
+    "login": [
+      "NIM/email atau kata sandi salah."
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "data": {
+    "ticket_code": "TK-XQMKQQ",
+    "status": "confirmed",
+    "status_label": "Terkonfirmasi",
+    "participant": {
+      "name": "Peserta 1",
+      "nim": "41521000001",
+      "study_program": "Teknik Sipil",
+      "cohort_year": 2021
+    },
+    "event": {
+      "title": "Rekrutmen Panitia FASILKOM",
+      "slug": "rekrutmen-panitia-fasilkom",
+      "poster_url": null,
+      "start_at": "2026-11-03T15:35:22+07:00",
+      "end_at": "2026-11-03T18:35:22+07:00",
+      "location": "Gedung B UMB",
+      "format": "offline",
+      "wa_group_url": "https://chat.whatsapp.com/oJX27KrM6h37WdAwu00wJv",
+      "meeting_url": null,
+      "can_access_links": true
+    },
+    "unlocked_access": {
+      "can_access_links": true,
+      "wa_group_url": "https://chat.whatsapp.com/oJX27KrM6h37WdAwu00wJv",
+      "meeting_url": null
+    },
+    "amount_paid": 0,
+    "amount_due": 0,
+    "unique_code": 0,
+    "revision_notes": null,
+    "checked_in_at": null,
+    "registered_at": "2026-10-28T15:35:36+07:00"
+  }
+}

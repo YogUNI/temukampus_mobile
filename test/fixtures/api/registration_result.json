@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "message": "Pendaftaran berhasil. Tiketmu sudah dibuat.",
+  "data": {
+    "id": 501,
+    "event_id": 7,
+    "ticket_code": "TK-7F3KQ9",
+    "status": "pending_verification",
+    "status_label": "Menunggu Verifikasi",
+    "amount_due": 35627,
+    "unique_code": 627,
+    "registered_at": "2026-11-14T00:10:00+07:00",
+    "payment_proof_path": "proofs/2026/11/bukti.jpg",
+    "event": {
+      "id": 7,
+      "title": "Seminar Nasional AI",
+      "slug": "seminar-nasional-ai",
+      "poster_url": null,
+      "start_at": "2026-11-20T09:00:00+07:00",
+      "location": "Auditorium"
+    }
+  }
+}

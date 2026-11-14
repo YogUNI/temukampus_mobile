@@ -12,6 +12,7 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/app_network_or_asset_image.dart';
+import '../../../../shared/widgets/event_poster_placeholder.dart';
 import '../../data/models/event_model.dart';
 
 /// Carousel acara unggulan untuk Beranda.
@@ -208,6 +209,11 @@ class _HeroCard extends StatelessWidget {
                       child: AppNetworkOrAssetImage(
                         imagePath: event.posterUrl,
                         fit: BoxFit.cover,
+                        errorWidget: EventPosterPlaceholder(
+                          categorySlug: event.categorySlug,
+                          categoryName: event.category,
+                          title: event.title,
+                        ),
                       ),
                     ),
                   ),

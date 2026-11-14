@@ -1,0 +1,82 @@
+{
+  "data": [
+    {
+      "ticket_code": "TK-X27RGT",
+      "status": "pending_verification",
+      "status_label": "Menunggu verifikasi",
+      "participant": {
+        "name": "Peserta 1",
+        "nim": "41521000001",
+        "study_program": "Teknik Sipil",
+        "cohort_year": 2021
+      },
+      "event": {
+        "title": "Workshop Figma (Hybrid)",
+        "slug": "workshop-figma-hybrid",
+        "poster_url": null,
+        "start_at": "2026-11-13T15:35:22+07:00",
+        "end_at": "2026-11-13T18:35:22+07:00",
+        "location": "Gedung Serbaguna UMB",
+        "format": "hybrid",
+        "wa_group_url": null,
+        "meeting_url": null,
+        "can_access_links": false
+      },
+      "unlocked_access": {
+        "can_access_links": false,
+        "wa_group_url": null,
+        "meeting_url": null
+      },
+      "amount_paid": 15219,
+      "amount_due": 15219,
+      "unique_code": 219,
+      "revision_notes": null,
+      "checked_in_at": null,
+      "registered_at": "2026-11-01T09:52:03+07:00"
+    }
+  ],
+  "links": {
+    "first": "http://temukampus.test/api/v1/tickets?tab=pending&page=1",
+    "last": "http://temukampus.test/api/v1/tickets?tab=pending&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Sebelumnya",
+        "page": null,
+        "active": false
+      },
+      {
+        "url": "http://temukampus.test/api/v1/tickets?tab=pending&page=1",
+        "label": "1",
+        "page": 1,
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Berikutnya &raquo;",
+        "page": null,
+        "active": false
+      }
+    ],
+    "path": "http://temukampus.test/api/v1/tickets",
+    "per_page": 15,
+    "to": 1,
+    "total": 1
+  },
+  "success": true,
+  "tab": "menunggu",
+  "counts": {
+    "akan-datang": 0,
+    "menunggu": 1,
+    "selesai": 2,
+    "dibatalkan": 2,
+    "revision": 0
+  }
+}

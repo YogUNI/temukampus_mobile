@@ -20,14 +20,12 @@ class RegistrationRepository {
   Future<RegistrationResultModel> submitRegistration({
     required String slug,
     required bool termsAccepted,
-    required bool isPaid,
     PickedImageData? proofData,
     void Function(int sent, int total)? onProgress,
   }) async {
     return await _remoteDataSource.submitRegistration(
       slug: slug,
       termsAccepted: termsAccepted,
-      isPaid: isPaid,
       proofData: proofData,
       onProgress: onProgress,
     );

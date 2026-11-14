@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/image_compressor.dart';
 import '../models/ticket_model.dart';
@@ -34,14 +36,20 @@ class TicketsRemoteDataSource {
       // Simpan ke cache lokal
       await _cacheTickets(tab, tickets);
       return tickets;
-    } catch (_) {
-      // Offline fallback: Ambil dari cache lokal terlebih dahulu
+    } on AppException {
+      // Offline (BR-08): tampilkan cache lokal bila ada, selain itu biarkan
+      // galat asli naik agar layar menampilkan status Error + "Coba Lagi".
       final cached = await _getCachedTickets(tab);
       if (cached.isNotEmpty) {
         return cached;
       }
-      // Jika cache kosong, gunakan mock data realistis
-      return _getMockTickets(tab);
+      rethrow;
+    } on DioException catch (e) {
+      final cached = await _getCachedTickets(tab);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      throw _asAppException(e);
     }
   }
 
@@ -57,12 +65,18 @@ class TicketsRemoteDataSource {
       // Simpan ke cache lokal
       await _cacheTicketDetail(ticket);
       return ticket;
-    } catch (_) {
+    } on AppException {
       final cached = await _getCachedTicketDetail(ticketCode);
       if (cached != null) {
         return cached;
       }
-      return _getMockTicketDetail(ticketCode);
+      rethrow;
+    } on DioException catch (e) {
+      final cached = await _getCachedTicketDetail(ticketCode);
+      if (cached != null) {
+        return cached;
+      }
+      throw _asAppException(e);
     }
   }
 
@@ -70,11 +84,13 @@ class TicketsRemoteDataSource {
   Future<String> cancelTicket(String ticketCode) async {
     try {
       final response = await _apiClient.delete<Map<String, dynamic>>(
-        '/tickets/$ticketCode',
+        ApiEndpoints.ticketDetail(ticketCode),
       );
       return response.data?['message'] as String? ?? 'Pendaftaran tiket berhasil dibatalkan.';
-    } catch (_) {
-      return 'Pendaftaran tiket berhasil dibatalkan (Dev Mock).';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
@@ -99,8 +115,10 @@ class TicketsRemoteDataSource {
       );
 
       return response.data?['message'] as String? ?? 'Bukti pembayaran berhasil dikirimkan ulang.';
-    } catch (_) {
-      return 'Bukti pembayaran berhasil dikirimkan ulang. Menunggu peninjauan panitia (Dev Mock).';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
     }
   }
 
@@ -147,146 +165,15 @@ class TicketsRemoteDataSource {
     return null;
   }
 
-  // === Dev Mock Generator Realistis (4 Status Tiket) ===
+  /// Setiap kegagalan Dio yang belum bertipe diterjemahkan ke [AppException],
+  /// supaya UI selalu punya pesan bahasa Indonesia yang bisa ditampilkan.
+  AppException _asAppException(DioException e) {
+    final error = e.error;
+    if (error is AppException) return error;
 
-  static final List<TicketModel> _allMockTickets = [
-    // 1. Tiket Terkonfirmasi (Confirmed): Seminar AI 2026, QR Code aktif, grup WA terbuka!
-    TicketModel(
-      ticketCode: 'TK-7F3KQ9',
-      status: 'confirmed',
-      statusLabel: 'Terkonfirmasi',
-      participant: const TicketParticipantModel(
-        name: 'Yoga Pratama',
-        nim: '41524010001',
-        studyProgram: 'Teknik Informatika',
-      ),
-      event: TicketEventModel(
-        title: 'Seminar Nasional: Masa Depan Artificial Intelligence di Indonesia',
-        slug: 'seminar-nasional-ai-2026',
-        posterUrl: 'assets/images/posters/poster_ai_seminar.jpg',
-        startAt: DateTime(2026, 11, 20, 9, 0),
-        endAt: DateTime(2026, 11, 20, 12, 30),
-        location: 'Auditorium Tower Lt. 7 Kampus Meruya & Zoom Meeting',
-        format: 'hybrid',
-      ),
-      amountPaid: 25137,
-      checkedInAt: null,
-      unlockedAccess: const UnlockedAccessModel(
-        canAccessLinks: true,
-        waGroupUrl: 'https://chat.whatsapp.com/mock-ai-seminar-umb',
-        meetingUrl: 'https://zoom.us/j/1234567890?pwd=mock',
-      ),
-      registeredAt: DateTime(2026, 11, 5, 14, 20),
-    ),
-
-    // 2. Tiket Menunggu Verifikasi (Pending): Workshop Cyber Security
-    TicketModel(
-      ticketCode: 'TK-8K2MN4',
-      status: 'pending_verification',
-      statusLabel: 'Menunggu Verifikasi',
-      participant: const TicketParticipantModel(
-        name: 'Yoga Pratama',
-        nim: '41524010001',
-        studyProgram: 'Teknik Informatika',
-      ),
-      event: TicketEventModel(
-        title: 'Workshop Cyber Security: Penetration Testing & Ethical Hacking',
-        slug: 'workshop-cyber-security-pentest',
-        posterUrl: 'assets/images/posters/poster_cyber_security.jpg',
-        startAt: DateTime(2026, 11, 22, 13, 0),
-        endAt: DateTime(2026, 11, 22, 17, 0),
-        location: 'Auditorium Tower Lt. 7 Kampus Meruya',
-        format: 'offline',
-      ),
-      amountPaid: 0,
-      checkedInAt: null,
-      unlockedAccess: const UnlockedAccessModel(
-        canAccessLinks: false,
-        waGroupUrl: null,
-        meetingUrl: null,
-      ),
-      registeredAt: DateTime(2026, 11, 6, 10, 15),
-    ),
-
-    // 3. Tiket Perlu Revisi (Needs Revision): Lomba Desain
-    TicketModel(
-      ticketCode: 'TK-3P9QL1',
-      status: 'needs_revision',
-      statusLabel: 'Perlu Revisi',
-      participant: const TicketParticipantModel(
-        name: 'Yoga Pratama',
-        nim: '41524010001',
-        studyProgram: 'Teknik Informatika',
-      ),
-      event: TicketEventModel(
-        title: 'Mercu Buana UI/UX Design Competition 2026',
-        slug: 'mercu-buana-uiux-competition',
-        posterUrl: 'assets/images/posters/poster_uiux_design.jpg',
-        startAt: DateTime(2026, 12, 1, 8, 30),
-        endAt: DateTime(2026, 12, 1, 16, 0),
-        location: 'Online via Discord & Google Meet',
-        format: 'online',
-      ),
-      amountPaid: 15124,
-      revisionNotes: 'Bukti transfer terpotong pada bagian nomor referensi. Mohon unggah mutasi/struk m-banking utuh.',
-      checkedInAt: null,
-      unlockedAccess: const UnlockedAccessModel(
-        canAccessLinks: false,
-        waGroupUrl: null,
-        meetingUrl: null,
-      ),
-      registeredAt: DateTime(2026, 11, 4, 16, 45),
-    ),
-
-    // 4. Tiket Selesai (Completed): Kuliah Tamu Kewirausahaan
-    TicketModel(
-      ticketCode: 'TK-1A9XZ8',
-      status: 'confirmed',
-      statusLabel: 'Selesai',
-      participant: const TicketParticipantModel(
-        name: 'Yoga Pratama',
-        nim: '41524010001',
-        studyProgram: 'Teknik Informatika',
-      ),
-      event: TicketEventModel(
-        title: 'Kuliah Tamu Technopreneur: Merintis Startup Kampus dari Nol',
-        slug: 'kuliah-tamu-technopreneur',
-        posterUrl: 'assets/images/posters/poster_startup.jpg',
-        startAt: DateTime(2026, 10, 20, 10, 0),
-        endAt: DateTime(2026, 10, 20, 12, 0),
-        location: 'Ruang Seminar Tower Lt. 2 Kampus Meruya',
-        format: 'offline',
-      ),
-      amountPaid: 0,
-      checkedInAt: DateTime(2026, 10, 20, 9, 48), // Sudah presensi check-in
-      unlockedAccess: const UnlockedAccessModel(
-        canAccessLinks: true,
-        waGroupUrl: null,
-        meetingUrl: null,
-      ),
-      registeredAt: DateTime(2026, 10, 15, 9, 30),
-    ),
-  ];
-
-  List<TicketModel> _getMockTickets(String tab) {
-    switch (tab) {
-      case 'pending':
-        return _allMockTickets.where((t) => t.isPending || t.isNeedsRevision).toList();
-      case 'completed':
-        return _allMockTickets.where((t) => t.isCheckedIn).toList();
-      case 'cancelled':
-        return _allMockTickets.where((t) => t.isCancelled).toList();
-      case 'upcoming':
-      default:
-        return _allMockTickets.where((t) => t.isConfirmed && !t.isCheckedIn).toList();
-    }
-  }
-
-  TicketModel _getMockTicketDetail(String ticketCode) {
-    return _allMockTickets.firstWhere(
-      (t) => t.ticketCode == ticketCode,
-      orElse: () => _allMockTickets.first,
+    return ServerException(
+      'Tidak dapat menghubungi server TemuKampus. Periksa koneksi lalu coba lagi.',
+      e.response?.statusCode,
     );
   }
 }
-

@@ -5,10 +5,14 @@ import '../constants/env.dart';
 import '../storage/secure_storage_service.dart';
 import 'auth_interceptor.dart';
 import 'error_interceptor.dart';
+import 'session_expiry.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final storage = ref.watch(secureStorageServiceProvider);
-  return ApiClient.createDio(storage);
+
+  // 401 → bersihkan token (di interceptor) lalu beri tahu lapisan auth lewat
+  // `SessionExpiry` supaya pengguna diarahkan ke /login tanpa siklus provider.
+  return ApiClient.createDio(storage, SessionExpiry.notify);
 });
 
 final apiClientProvider = Provider<ApiClient>((ref) {

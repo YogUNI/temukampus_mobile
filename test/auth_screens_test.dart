@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:temukampus_mobile/app/app.dart';
+import 'package:temukampus_mobile/core/network/api_client.dart';
 import 'package:temukampus_mobile/core/storage/local_cache_service.dart';
 import 'package:temukampus_mobile/core/storage/secure_storage_service.dart';
 import 'package:temukampus_mobile/core/utils/formatters.dart';
@@ -11,12 +12,14 @@ import 'package:temukampus_mobile/features/auth/presentation/screens/register_sc
 import 'package:temukampus_mobile/features/auth/presentation/screens/splash_screen.dart';
 
 import 'auth_notifier_test.dart';
+import 'helpers/fake_api.dart';
 
 /// Boot aplikasi lalu lewati splash. Dengan `has_seen_onboarding` = true,
 /// rute akhirnya adalah /login.
 Future<void> _pumpToLogin(
   WidgetTester tester, {
   Size size = const Size(390, 844),
+  List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -34,6 +37,7 @@ Future<void> _pumpToLogin(
         secureStorageServiceProvider.overrideWithValue(
           SecureStorageService(storage: FakeSecureStorage()),
         ),
+        ...extraOverrides,
       ],
       child: const TemuKampusApp(),
     ),
@@ -134,6 +138,68 @@ void main() {
 
       expect(find.byType(RegisterScreen), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Alur masuk end-to-end (API v1)', () {
+    /// Adapter memakai fixture rekaman API nyata: login, katalog, kategori.
+    FakeApiAdapter buildAdapter() => FakeApiAdapter([
+          FakeRoute(method: 'POST', path: '/auth/login', body: apiFixture('auth_login.json')),
+          FakeRoute(method: 'GET', path: '/auth/me', body: apiFixture('auth_me.json')),
+          FakeRoute(method: 'GET', path: '/events', body: apiFixture('events_index.json')),
+          FakeRoute(method: 'GET', path: '/categories', body: apiFixture('categories.json')),
+        ]);
+
+    testWidgets('mengisi form, masuk, lalu beranda menyapa nama pengguna', (tester) async {
+      final adapter = buildAdapter();
+      await _pumpToLogin(
+        tester,
+        extraOverrides: [apiClientProvider.overrideWithValue(fakeApiClient(adapter))],
+      );
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).at(0), 'peserta1@example.test');
+      await tester.enterText(find.byType(TextField).at(1), 'password');
+      await tester.pumpAndSettle();
+
+      await tapText(tester, 'Masuk Sekarang');
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      // Token tersimpan & permintaan login benar-benar dikirim.
+      expect(adapter.requests, contains('POST /auth/login'));
+
+      // Beranda menyapa dengan nama depan dari respons API.
+      expect(find.text('Halo, Peserta!'), findsOneWidget);
+      expect(find.byType(LoginScreen), findsNothing);
+    });
+
+    testWidgets('kredensial salah menempelkan pesan galat pada field', (tester) async {
+      final adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'POST',
+          path: '/auth/login',
+          body: apiFixture('auth_login_invalid.json'),
+          status: 422,
+        ),
+        FakeRoute(method: 'GET', path: '/events', body: apiFixture('events_index.json')),
+        FakeRoute(method: 'GET', path: '/categories', body: apiFixture('categories.json')),
+      ]);
+
+      await _pumpToLogin(
+        tester,
+        extraOverrides: [apiClientProvider.overrideWithValue(fakeApiClient(adapter))],
+      );
+
+      await tester.enterText(find.byType(TextField).at(0), 'salah@example.test');
+      await tester.enterText(find.byType(TextField).at(1), 'salah123');
+      await tester.pumpAndSettle();
+
+      await tapText(tester, 'Masuk Sekarang');
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.textContaining('NIM/email atau kata sandi salah'), findsWidgets);
     });
   });
 }

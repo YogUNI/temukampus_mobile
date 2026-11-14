@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "data": {
+    "is_eligible": false,
+    "reasons": [
+      "Masuk dengan akunmu untuk mendaftar event ini."
+    ],
+    "cta_state": "guest",
+    "cta_label": "Masuk untuk daftar",
+    "has_active_ticket": false,
+    "ticket_code": null
+  }
+}

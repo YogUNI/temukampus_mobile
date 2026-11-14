@@ -16,6 +16,7 @@ import '../../../../app/theme/components/glass_icon_button.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/app_network_or_asset_image.dart';
+import '../../../../shared/widgets/event_poster_placeholder.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../data/models/event_model.dart';
 import '../controllers/event_detail_controller.dart';
@@ -294,6 +295,11 @@ class EventDetailScreen extends ConsumerWidget {
               child: AppNetworkOrAssetImage(
                 imagePath: event.posterUrl,
                 fit: BoxFit.cover,
+                errorWidget: EventPosterPlaceholder(
+                  categorySlug: event.categorySlug,
+                  categoryName: event.category,
+                  title: event.title,
+                ),
               ),
             ),
             DecoratedBox(
@@ -334,6 +340,11 @@ class EventDetailScreen extends ConsumerWidget {
                     child: AppNetworkOrAssetImage(
                       imagePath: event.posterUrl,
                       fit: BoxFit.cover,
+                      errorWidget: EventPosterPlaceholder(
+                        categorySlug: event.categorySlug,
+                        categoryName: event.category,
+                        title: event.title,
+                      ),
                     ),
                   ),
                 ),

@@ -1,10 +1,49 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dio/dio.dart';
-import 'package:temukampus_mobile/core/network/api_client.dart';
 import 'package:temukampus_mobile/features/scanner/data/datasources/scanner_remote_datasource.dart';
 import 'package:temukampus_mobile/features/scanner/data/models/check_in_result_model.dart';
 import 'package:temukampus_mobile/features/scanner/data/repositories/scanner_repository.dart';
 import 'package:temukampus_mobile/features/scanner/presentation/controllers/scanner_controller.dart';
+
+import 'helpers/fake_api.dart';
+
+/// Backend memutuskan hasil pemindaian; aplikasi hanya menerjemahkan.
+/// Fixture diambil dari respons API v1 sungguhan.
+ScannerRemoteDataSource buildDataSource() {
+  final adapter = FakeApiAdapter([
+    FakeRoute(
+      method: 'POST',
+      path: '/panitia/check-in/scan',
+      bodyMatch: {'ticket_code': 'TK-BU44Z4'},
+      body: apiFixture('check_in_success.json'),
+    ),
+    FakeRoute(
+      method: 'POST',
+      path: '/panitia/check-in/scan',
+      bodyMatch: {'ticket_code': 'TK-SUDAH01'},
+      body: apiFixture('check_in_already.json'),
+    ),
+    FakeRoute(
+      method: 'POST',
+      path: '/panitia/check-in/scan',
+      body: apiFixture('check_in_invalid.json'),
+    ),
+    FakeRoute(
+      method: 'POST',
+      path: '/panitia/check-in/manual',
+      bodyMatch: {'query': '41121000051'},
+      body: apiFixture('check_in_success.json'),
+    ),
+    FakeRoute(
+      method: 'POST',
+      path: '/panitia/check-in/manual',
+      body: apiFixture('check_in_invalid.json'),
+    ),
+    FakeRoute(method: 'GET', path: '/panitia/events', body: apiFixture('organizer_events.json')),
+    FakeRoute(method: 'GET', path: '/organizer/events', body: apiFixture('organizer_events.json')),
+  ]);
+
+  return ScannerRemoteDataSource(fakeApiClient(adapter));
+}
 
 void main() {
   group('CheckInResultModel Unit Tests', () {
@@ -71,49 +110,45 @@ void main() {
     late ScannerRemoteDataSource dataSource;
 
     setUp(() {
-      final apiClient = ApiClient(Dio());
-      dataSource = ScannerRemoteDataSource(apiClient);
+      dataSource = buildDataSource();
     });
 
-    test('Scan tiket baru valid menghasilkan SUCCESS', () async {
-      final result = await dataSource.scanTicket(
-        eventId: 1,
-        ticketCode: 'TK-7F3KQ9',
-      );
+    test('Scan tiket valid menghasilkan SUCCESS beserta data peserta', () async {
+      final result = await dataSource.scanTicket(eventId: 7, ticketCode: 'TK-BU44Z4');
 
       expect(result.isSuccess, isTrue);
-      expect(result.participant?.name, contains('Yoga'));
+      expect(result.participant?.name, equals('Peserta 51'));
+      expect(result.participant?.nim, equals('41121000051'));
+      expect(result.ticketCode, equals('TK-BU44Z4'));
     });
 
-    test('Scan tiket yang sama kedua kali menghasilkan ALREADY_CHECKED_IN', () async {
-      // Tiket TK-7F3KQ9 sudah dipindai di test sebelumnya
-      final result = await dataSource.scanTicket(
-        eventId: 1,
-        ticketCode: 'TK-7F3KQ9',
-      );
+    test('Scan tiket yang sudah dipakai menghasilkan ALREADY_CHECKED_IN', () async {
+      final result = await dataSource.scanTicket(eventId: 7, ticketCode: 'TK-SUDAH01');
 
       expect(result.isAlreadyCheckedIn, isTrue);
-      expect(result.message, contains('sudah pernah dipindai'));
+      expect(result.message, contains('sudah check-in'));
     });
 
-    test('Scan kode tiket acak menghasilkan INVALID_TICKET', () async {
-      final result = await dataSource.scanTicket(
-        eventId: 1,
-        ticketCode: 'RANDOM-CODE-123',
-      );
+    test('Scan kode asing menghasilkan INVALID_TICKET', () async {
+      final result = await dataSource.scanTicket(eventId: 7, ticketCode: 'TK-NGAWUR');
 
       expect(result.isInvalid, isTrue);
       expect(result.message, contains('tidak terdaftar'));
     });
 
-    test('Presensi manual via NIM 41524010001 berhasil', () async {
-      final result = await dataSource.manualCheckIn(
-        eventId: 1,
-        query: '41524010001',
-      );
+    test('Presensi manual via NIM peserta berhasil', () async {
+      final result = await dataSource.manualCheckIn(eventId: 7, query: '41121000051');
 
-      // Karena TK-7F3KQ9 sudah di-scan, mengembalikan ALREADY_CHECKED_IN atau SUCCESS
-      expect(result.status != CheckInStatus.invalidTicket, isTrue);
+      expect(result.status, isNot(CheckInStatus.invalidTicket));
+      expect(result.participant?.nim, equals('41121000051'));
+    });
+
+    test('Daftar acara panitia dimuat dari API', () async {
+      final events = await dataSource.getManagedEvents();
+
+      expect(events, isNotEmpty);
+      expect(events.first.title, contains('Seminar Karier'));
+      expect(events.first.registeredCount, 19);
     });
   });
 
@@ -122,10 +157,8 @@ void main() {
     late ScannerRepository repository;
 
     setUp(() {
-      final apiClient = ApiClient(Dio());
-      final remoteDataSource = ScannerRemoteDataSource(apiClient);
-      repository = ScannerRepository(remoteDataSource);
-      controller = ScannerController(repository, 1);
+      repository = ScannerRepository(buildDataSource());
+      controller = ScannerController(repository, 7);
     });
 
     test('Inisialisasi kuota dan counter kehadiran', () {
@@ -144,7 +177,7 @@ void main() {
     });
 
     test('Resume scanning membersihkan lastResult', () async {
-      await controller.onCodeDetected('TK-NEWPASS99');
+      await controller.onCodeDetected('TK-BU44Z4');
       expect(controller.state.lastResult, isNotNull);
 
       controller.resumeScanning();

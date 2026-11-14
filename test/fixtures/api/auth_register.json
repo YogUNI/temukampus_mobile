@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "message": "Akun berhasil dibuat. Cek emailmu untuk kode verifikasi.",
+  "data": {
+    "token": "test-token",
+    "user": {
+      "id": 101,
+      "name": "Mahasiswa Baru",
+      "email": "maba@mercubuana.ac.id",
+      "role": "user",
+      "account_type": "umb",
+      "nim": "41824010055",
+      "phone": "087897518632",
+      "avatar_url": "http://temukampus.test/storage/avatars/LHl7Utwcn4TYW3isEv3AxAWPId8XThzqXU1EFe8x.webp",
+      "institution_name": null,
+      "study_program": {
+        "id": 17,
+        "code": "411",
+        "name": "Teknik Sipil"
+      },
+      "cohort_year": 2021,
+      "email_verified": false,
+      "is_organizer": false,
+      "managed_organizations": [],
+      "status": "active",
+      "suspension_reason": null
+    }
+  }
+}

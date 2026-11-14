@@ -1,0 +1,58 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Seminar",
+      "slug": "seminar",
+      "events_count": 1
+    },
+    {
+      "id": 2,
+      "name": "Workshop",
+      "slug": "workshop",
+      "events_count": 0
+    },
+    {
+      "id": 3,
+      "name": "Lomba",
+      "slug": "lomba",
+      "events_count": 0
+    },
+    {
+      "id": 4,
+      "name": "Rekrutmen dan Kepanitiaan",
+      "slug": "rekrutmen-kepanitiaan",
+      "events_count": 0
+    },
+    {
+      "id": 5,
+      "name": "Pelatihan",
+      "slug": "pelatihan",
+      "events_count": 1
+    },
+    {
+      "id": 6,
+      "name": "Olahraga",
+      "slug": "olahraga",
+      "events_count": 1
+    },
+    {
+      "id": 7,
+      "name": "Seni dan Budaya",
+      "slug": "seni-budaya",
+      "events_count": 1
+    },
+    {
+      "id": 8,
+      "name": "Sosial",
+      "slug": "sosial",
+      "events_count": 0
+    },
+    {
+      "id": 9,
+      "name": "Lainnya",
+      "slug": "lainnya",
+      "events_count": 0
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/app_network_or_asset_image.dart';
+import '../../../../shared/widgets/event_poster_placeholder.dart';
 import '../../data/models/event_model.dart';
 
 /// Kartu acara mode daftar (vertikal) di Jelajah.
@@ -62,19 +63,15 @@ class EventTicketCard extends StatelessWidget {
                           // 4:5 — rasio master poster (1080×1350), bukan kotak.
                           width: 72,
                           height: 90,
-                          child: event.posterUrl != null
-                              ? AppNetworkOrAssetImage(
-                                  imagePath: event.posterUrl,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  color: AppColors.cobaltLight,
-                                  child: const Icon(
-                                    Icons.event_rounded,
-                                    color: AppColors.cobalt,
-                                    size: 30,
-                                  ),
-                                ),
+                          child: AppNetworkOrAssetImage(
+                            imagePath: event.posterUrl,
+                            fit: BoxFit.cover,
+                            errorWidget: EventPosterPlaceholder(
+                              categorySlug: event.categorySlug,
+                              categoryName: event.category,
+                              compact: true,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),

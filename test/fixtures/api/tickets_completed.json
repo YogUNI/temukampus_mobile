@@ -1,0 +1,116 @@
+{
+  "data": [
+    {
+      "ticket_code": "TK-XQMKQQ",
+      "status": "confirmed",
+      "status_label": "Terkonfirmasi",
+      "participant": {
+        "name": "Peserta 1",
+        "nim": "41521000001",
+        "study_program": "Teknik Sipil",
+        "cohort_year": 2021
+      },
+      "event": {
+        "title": "Rekrutmen Panitia FASILKOM",
+        "slug": "rekrutmen-panitia-fasilkom",
+        "poster_url": null,
+        "start_at": "2026-11-03T15:35:22+07:00",
+        "end_at": "2026-11-03T18:35:22+07:00",
+        "location": "Gedung B UMB",
+        "format": "offline",
+        "wa_group_url": "https://chat.whatsapp.com/oJX27KrM6h37WdAwu00wJv",
+        "meeting_url": null,
+        "can_access_links": true
+      },
+      "unlocked_access": {
+        "can_access_links": true,
+        "wa_group_url": "https://chat.whatsapp.com/oJX27KrM6h37WdAwu00wJv",
+        "meeting_url": null
+      },
+      "amount_paid": 0,
+      "amount_due": 0,
+      "unique_code": 0,
+      "revision_notes": null,
+      "checked_in_at": null,
+      "registered_at": "2026-10-28T15:35:36+07:00"
+    },
+    {
+      "ticket_code": "TK-D9K49Q",
+      "status": "confirmed",
+      "status_label": "Terkonfirmasi",
+      "participant": {
+        "name": "Peserta 1",
+        "nim": "41521000001",
+        "study_program": "Teknik Sipil",
+        "cohort_year": 2021
+      },
+      "event": {
+        "title": "Coding Bootcamp HIMA TI",
+        "slug": "hima-ti-coding-bootcamp",
+        "poster_url": null,
+        "start_at": "2026-11-02T15:35:22+07:00",
+        "end_at": "2026-11-02T18:35:22+07:00",
+        "location": "Gedung C UMB",
+        "format": "offline",
+        "wa_group_url": "https://chat.whatsapp.com/iwzU8WAwC16PyqHFTVYbNQ",
+        "meeting_url": null,
+        "can_access_links": true
+      },
+      "unlocked_access": {
+        "can_access_links": true,
+        "wa_group_url": "https://chat.whatsapp.com/iwzU8WAwC16PyqHFTVYbNQ",
+        "meeting_url": null
+      },
+      "amount_paid": 0,
+      "amount_due": 0,
+      "unique_code": 0,
+      "revision_notes": null,
+      "checked_in_at": null,
+      "registered_at": "2026-10-28T15:35:22+07:00"
+    }
+  ],
+  "links": {
+    "first": "http://temukampus.test/api/v1/tickets?tab=completed&page=1",
+    "last": "http://temukampus.test/api/v1/tickets?tab=completed&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Sebelumnya",
+        "page": null,
+        "active": false
+      },
+      {
+        "url": "http://temukampus.test/api/v1/tickets?tab=completed&page=1",
+        "label": "1",
+        "page": 1,
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Berikutnya &raquo;",
+        "page": null,
+        "active": false
+      }
+    ],
+    "path": "http://temukampus.test/api/v1/tickets",
+    "per_page": 15,
+    "to": 2,
+    "total": 2
+  },
+  "success": true,
+  "tab": "selesai",
+  "counts": {
+    "akan-datang": 0,
+    "menunggu": 1,
+    "selesai": 2,
+    "dibatalkan": 2,
+    "revision": 0
+  }
+}

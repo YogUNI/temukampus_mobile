@@ -1,0 +1,47 @@
+{
+  "data": [],
+  "links": {
+    "first": "http://temukampus.test/api/v1/tickets?tab=upcoming&page=1",
+    "last": "http://temukampus.test/api/v1/tickets?tab=upcoming&page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": null,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Sebelumnya",
+        "page": null,
+        "active": false
+      },
+      {
+        "url": "http://temukampus.test/api/v1/tickets?tab=upcoming&page=1",
+        "label": "1",
+        "page": 1,
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Berikutnya &raquo;",
+        "page": null,
+        "active": false
+      }
+    ],
+    "path": "http://temukampus.test/api/v1/tickets",
+    "per_page": 15,
+    "to": null,
+    "total": 0
+  },
+  "success": true,
+  "tab": "akan-datang",
+  "counts": {
+    "akan-datang": 0,
+    "menunggu": 1,
+    "selesai": 2,
+    "dibatalkan": 2,
+    "revision": 0
+  }
+}

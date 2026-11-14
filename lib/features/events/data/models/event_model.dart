@@ -337,6 +337,10 @@ class EventModel {
   final EventOrganizationModel organization;
   final String? category;
 
+  /// Slug kategori dari API (`category_slug`), dipakai memilih ikon & warna
+  /// placeholder poster saat penyelenggara belum mengunggah poster.
+  final String? categorySlug;
+
   // Data Pembayaran Panitia (Khusus Berbayar)
   final String? bankName;
   final String? bankAccountNumber;
@@ -375,6 +379,7 @@ class EventModel {
     this.registeredCount = 0,
     required this.organization,
     this.category,
+    this.categorySlug,
     this.bankName,
     this.bankAccountNumber,
     this.bankAccountName,
@@ -462,6 +467,7 @@ class EventModel {
         json['organization'] as Map<String, dynamic>? ?? {},
       ),
       category: json['category'] as String?,
+      categorySlug: json['category_slug'] as String?,
       bankName: json['bank_name'] as String?,
       bankAccountNumber: json['bank_account_number'] as String?,
       bankAccountName: json['bank_account_name'] as String?,

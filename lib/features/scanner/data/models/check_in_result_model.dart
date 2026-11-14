@@ -141,6 +141,11 @@ class GateEventModel {
   final DateTime startAt;
   final int totalQuota;
   final int attendedCount;
+
+  /// Jumlah pendaftar aktif pada acara ini (dikirim API sebagai
+  /// `registered_count`) — dipakai ringkasan pintu masuk panitia.
+  final int registeredCount;
+
   final String organizationName;
 
   const GateEventModel({
@@ -151,6 +156,7 @@ class GateEventModel {
     required this.startAt,
     required this.totalQuota,
     required this.attendedCount,
+    this.registeredCount = 0,
     required this.organizationName,
   });
 
@@ -162,6 +168,7 @@ class GateEventModel {
       location: json['location'] as String? ?? 'Kampus Meruya UMB',
       startAt: json['start_at'] != null ? DateTime.parse(json['start_at'] as String) : DateTime.now(),
       totalQuota: json['total_quota'] as int? ?? json['quota'] as int? ?? 100,
+      registeredCount: json['registered_count'] as int? ?? 0,
       attendedCount: json['attended_count'] as int? ?? 0,
       organizationName: json['organization_name'] as String? ?? 'Ormawa UMB',
     );
