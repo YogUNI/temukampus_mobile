@@ -103,6 +103,12 @@ void main() {
       }),
       FakeRoute(method: 'POST', path: '/auth/logout', body: apiFixture('auth_logout.json')),
       FakeRoute(method: 'GET', path: '/auth/me', body: apiFixture('auth_me.json')),
+      FakeRoute(
+        method: 'POST',
+        path: '/auth/forgot-password',
+        body: apiFixture('forgot_password.json'),
+      ),
+      FakeRoute(method: 'POST', path: '/auth/reset-password', body: apiFixture('reset_password.json')),
       FakeRoute(method: 'GET', path: '/profile', body: apiFixture('profile_show.json')),
       FakeRoute(method: 'PUT', path: '/profile', body: apiFixture('profile_update.json')),
       FakeRoute(method: 'PUT', path: '/profile/password', body: apiFixture('profile_password.json')),
@@ -291,6 +297,50 @@ void main() {
       expect(error, isNull);
       expect(authNotifier.state.user?.avatarUrl, isNotNull);
       expect(authNotifier.state.user?.avatarUrl, isNot(before));
+    });
+  });
+
+  group('Lupa kata sandi (API v1)', () {
+    test('requestPasswordReset mengirim permintaan & tidak membocorkan status email', () async {
+      final error = await authNotifier.requestPasswordReset('peserta1@example.test');
+
+      expect(error, isNull);
+      expect(adapter.requests, contains('POST /auth/forgot-password'));
+    });
+
+    test('resetPassword dengan kode benar berhasil', () async {
+      final error = await authNotifier.resetPassword(
+        email: 'peserta1@example.test',
+        code: '503823',
+        newPassword: 'BaruSekali456',
+        confirmation: 'BaruSekali456',
+      );
+
+      expect(error, isNull);
+      expect(adapter.requests, contains('POST /auth/reset-password'));
+    });
+
+    test('kode salah menampilkan pesan dari server', () async {
+      buildNotifier();
+      adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'POST',
+          path: '/auth/reset-password',
+          body: apiFixture('reset_password_invalid.json'),
+          status: 422,
+        ),
+      ]);
+      final remoteDataSource = AuthRemoteDataSource(fakeApiClient(adapter));
+      authNotifier = AuthNotifier(AuthRepository(remoteDataSource, storageService));
+
+      final error = await authNotifier.resetPassword(
+        email: 'peserta1@example.test',
+        code: '000000',
+        newPassword: 'BaruSekali456',
+        confirmation: 'BaruSekali456',
+      );
+
+      expect(error, contains('Kode'));
     });
   });
 }

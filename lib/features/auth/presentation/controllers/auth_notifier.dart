@@ -163,6 +163,40 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Minta kode reset kata sandi. `null` = berhasil dikirim.
+  Future<String?> requestPasswordReset(String email) async {
+    try {
+      await _repository.forgotPassword(email);
+      return null;
+    } on AppException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Gagal mengirim kode. Periksa koneksi lalu coba lagi.';
+    }
+  }
+
+  /// Reset kata sandi memakai kode 6 angka. `null` = berhasil.
+  Future<String?> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String confirmation,
+  }) async {
+    try {
+      await _repository.resetPassword(
+        email: email,
+        code: code,
+        password: newPassword,
+        passwordConfirmation: confirmation,
+      );
+      return null;
+    } on AppException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Gagal mengganti kata sandi. Periksa koneksi lalu coba lagi.';
+    }
+  }
+
   /// Perbarui nama / nomor WhatsApp / asal institusi.
   ///
   /// Mengembalikan `null` bila berhasil, atau pesan galat siap tampil.

@@ -166,6 +166,49 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// Minta tautan + kode reset kata sandi ke email.
+  Future<String> forgotPassword(String email) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiEndpoints.forgotPassword,
+        data: {'email': email.trim()},
+      );
+
+      return response.data?['message'] as String? ??
+          'Kalau email itu terdaftar, kami sudah mengirim tautan dan kode atur ulang password.';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
+  /// Reset kata sandi memakai kode 6 angka dari email.
+  Future<String> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiEndpoints.resetPassword,
+        data: {
+          'email': email.trim(),
+          'code': code.trim(),
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+
+      return response.data?['message'] as String? ?? 'Password diganti. Silakan masuk.';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
   /// Perbarui profil (nama, nomor WhatsApp, asal institusi).
   ///
   /// Aturan validasi berasal dari `UpdateProfileRequest` di backend — sama

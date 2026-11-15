@@ -7,6 +7,7 @@ import 'package:temukampus_mobile/core/network/api_client.dart';
 import 'package:temukampus_mobile/core/storage/local_cache_service.dart';
 import 'package:temukampus_mobile/core/storage/secure_storage_service.dart';
 import 'package:temukampus_mobile/core/utils/formatters.dart';
+import 'package:temukampus_mobile/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/register_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/splash_screen.dart';
@@ -200,6 +201,54 @@ void main() {
 
       expect(find.byType(LoginScreen), findsOneWidget);
       expect(find.textContaining('NIM/email atau kata sandi salah'), findsWidgets);
+    });
+  });
+
+  group('Lupa kata sandi (layar dua langkah)', () {
+    testWidgets('kirim kode lalu simpan kata sandi baru kembali ke login', (tester) async {
+      final adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'POST',
+          path: '/auth/forgot-password',
+          body: apiFixture('forgot_password.json'),
+        ),
+        FakeRoute(method: 'POST', path: '/auth/reset-password', body: apiFixture('reset_password.json')),
+        FakeRoute(method: 'GET', path: '/events', body: apiFixture('events_index.json')),
+        FakeRoute(method: 'GET', path: '/categories', body: apiFixture('categories.json')),
+      ]);
+
+      await _pumpToLogin(
+        tester,
+        extraOverrides: [apiClientProvider.overrideWithValue(fakeApiClient(adapter))],
+      );
+
+      // Buka layar lupa kata sandi dari tautan di form login.
+      await tapText(tester, 'Lupa kata sandi?');
+      expect(find.byType(ForgotPasswordScreen), findsOneWidget);
+
+      // Langkah 1: email → kirim kode.
+      await tester.enterText(find.byType(TextField).first, 'peserta1@example.test');
+      await tester.pumpAndSettle();
+      await tapText(tester, 'Kirim Kode');
+      await tester.pumpAndSettle();
+
+      expect(adapter.requests, contains('POST /auth/forgot-password'));
+      expect(find.textContaining('Kode 6 angka sudah dikirim'), findsOneWidget);
+
+      // Langkah 2: kode + kata sandi baru.
+      final fields = find.byType(TextField);
+      expect(fields, findsNWidgets(4));
+
+      await tester.enterText(fields.at(1), '503823');
+      await tester.enterText(fields.at(2), 'BaruSekali456');
+      await tester.enterText(fields.at(3), 'BaruSekali456');
+      await tester.pumpAndSettle();
+
+      await tapText(tester, 'Simpan Kata Sandi Baru');
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      expect(adapter.requests, contains('POST /auth/reset-password'));
+      expect(find.byType(LoginScreen), findsOneWidget);
     });
   });
 }

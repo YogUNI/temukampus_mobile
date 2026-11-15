@@ -93,6 +93,26 @@ class AuthRepository {
     return null;
   }
 
+  /// Minta kode reset kata sandi.
+  Future<String> forgotPassword(String email) {
+    return _remoteDataSource.forgotPassword(email);
+  }
+
+  /// Reset kata sandi dengan kode dari email.
+  Future<String> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+    required String passwordConfirmation,
+  }) {
+    return _remoteDataSource.resetPassword(
+      email: email,
+      code: code,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+    );
+  }
+
   /// Perbarui profil lalu simpan salinan terbaru ke penyimpanan aman.
   Future<UserModel> updateProfile({
     required String name,
