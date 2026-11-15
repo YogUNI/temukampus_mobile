@@ -28,7 +28,7 @@ import '../../../notifications/presentation/widgets/notification_permission_prom
 ///
 /// Struktur: header personal → pencarian → carousel unggulan → chip cepat →
 /// grid 2-kolom. Tidak ada state filter lokal di sini: seluruh keadaan filter
-/// adalah turunan dari [eventsCatalogControllerProvider].
+/// adalah turunan dari [homeCatalogControllerProvider].
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -38,9 +38,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    final catalogState = ref.watch(eventsCatalogControllerProvider);
+    final catalogState = ref.watch(homeCatalogControllerProvider);
     final user = authState.user;
-    final controller = ref.read(eventsCatalogControllerProvider.notifier);
+    final controller = ref.read(homeCatalogControllerProvider.notifier);
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -131,7 +131,7 @@ class HomeScreen extends ConsumerWidget {
         message: state.errorMessage!,
         onRetry: () {
           AppHaptics.selection();
-          ref.read(eventsCatalogControllerProvider.notifier).fetchEvents();
+          ref.read(homeCatalogControllerProvider.notifier).fetchEvents();
         },
       );
     }
@@ -139,7 +139,7 @@ class HomeScreen extends ConsumerWidget {
     if (state.events.isEmpty) {
       return EmptyEventsView(
         onResetFilter: () =>
-            ref.read(eventsCatalogControllerProvider.notifier).resetFilters(),
+            ref.read(homeCatalogControllerProvider.notifier).resetFilters(),
       );
     }
 

@@ -89,13 +89,28 @@ class FakeApiAdapter implements HttpClientAdapter {
   /// Riwayat permintaan ("GET /tickets") untuk memverifikasi endpoint terpanggil.
   final List<String> requests = [];
 
+  /// Riwayat permintaan **beserta query** ("GET /events?category=seminar").
+  ///
+  /// Dipisah dari [requests] supaya tes lama yang mencocokkan persis
+  /// ("GET /events") tetap berlaku, sementara tes yang peduli pada filter
+  /// (kategori, format, halaman) bisa memeriksa query-nya.
+  final List<String> requestsWithQuery = [];
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    final query = options.queryParameters;
+
     requests.add('${options.method} ${options.path}');
+    requestsWithQuery.add(
+      query.isEmpty
+          ? '${options.method} ${options.path}'
+          : '${options.method} ${options.path}?'
+              '${query.entries.map((e) => '${e.key}=${e.value}').join('&')}',
+    );
 
     for (final route in routes) {
       if (route.matches(options)) return route.toResponseBody();

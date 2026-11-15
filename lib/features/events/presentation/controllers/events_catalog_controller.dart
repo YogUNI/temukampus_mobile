@@ -104,6 +104,17 @@ final eventsCatalogControllerProvider =
   return EventsCatalogController(repository);
 });
 
+/// Controller katalog khusus **Beranda**.
+///
+/// Beranda dan Jelajah memakai kelas yang sama tetapi instans terpisah, supaya
+/// filter yang dipilih di Jelajah (format, tag, harga, organisasi) tidak ikut
+/// menyaring beranda dan membuatnya tampak kosong tanpa sebab.
+final homeCatalogControllerProvider =
+    StateNotifierProvider<EventsCatalogController, EventsCatalogState>((ref) {
+  final repository = ref.watch(eventsRepositoryProvider);
+  return EventsCatalogController(repository);
+});
+
 class EventsCatalogController extends StateNotifier<EventsCatalogState> {
   final EventsRepository _repository;
 
@@ -187,13 +198,16 @@ class EventsCatalogController extends StateNotifier<EventsCatalogState> {
         state = state.copyWith(onlyFree: !state.onlyFree);
         break;
       case 'Seminar':
-        state = state.copyWith(selectedCategory: 'akademik');
+        // 'akademik' bukan slug kategori di API (yang ada: seminar, workshop,
+        // lomba, pelatihan, …). Memakai slug lama membuat katalog selalu kosong.
+        state = state.copyWith(selectedCategory: 'seminar');
         break;
       case 'Ber-SKP':
         state = state.copyWith(onlySkp: !state.onlySkp);
         break;
       case 'Workshop':
-        state = state.copyWith(selectedTag: 'workshop');
+        // Katalog API tidak punya filter `tag`; workshop adalah kategori.
+        state = state.copyWith(selectedCategory: 'workshop');
         break;
       case 'Cocok untuk Saya':
         state = state.copyWith(suitableForMe: !state.suitableForMe);
