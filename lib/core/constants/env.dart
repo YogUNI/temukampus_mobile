@@ -21,6 +21,27 @@ class AppEnv {
   // Override kustom saat runtime (uji coba di HP fisik via Wi-Fi LAN).
   static String? customHostOverride;
 
+  /// Apakah halaman web sedang disajikan dari mesin pengembang.
+  ///
+  /// `flutter build web` menghasilkan build release, dan sebelumnya build
+  /// release selalu memakai URL produksi — akibatnya build web yang dibuka di
+  /// localhost menembak host produksi yang belum ada dan katalog gagal dimuat.
+  /// Sekarang host yang menentukan: localhost/IP lokal memakai backend Laragon.
+  static bool get _isLocalWebHost {
+    if (!kIsWeb) return false;
+
+    final host = Uri.base.host;
+
+    if (host.isEmpty || host == 'localhost' || host == '127.0.0.1' || host == '0.0.0.0') {
+      return true;
+    }
+
+    // 192.168.x.x / 10.x.x.x / 172.16-31.x.x → jaringan lokal (HP fisik via Wi-Fi).
+    final isPrivateIpv4 = RegExp(r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)').hasMatch(host);
+
+    return isPrivateIpv4 || host == 'temukampus.test';
+  }
+
   static String get baseUrl {
     if (customHostOverride != null && customHostOverride!.isNotEmpty) {
       return customHostOverride!;
@@ -30,12 +51,12 @@ class AppEnv {
       return _defineBaseUrl;
     }
 
-    if (kReleaseMode) {
-      return _productionUrl;
+    if (kIsWeb) {
+      return _isLocalWebHost ? _localLaragonUrl : _productionUrl;
     }
 
-    if (kIsWeb) {
-      return _localLaragonUrl;
+    if (kReleaseMode) {
+      return _productionUrl;
     }
 
     switch (defaultTargetPlatform) {
