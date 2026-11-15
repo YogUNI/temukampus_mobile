@@ -12,8 +12,11 @@ class AppConstants {
   static const String keyRememberLogin = 'tk_remember_login';
 
   // Network Configuration
-  static const Duration connectTimeout = Duration(seconds: 15);
-  static const Duration receiveTimeout = Duration(seconds: 15);
+  /// Timeout koneksi. Dinaikkan dari 15s: jaringan kampus/Wi-Fi bersama bisa
+  /// butuh >15s untuk permintaan pertama, dan dev server PHP (single-thread)
+  /// ikut mengantre sehingga login sempat gagal dengan "koneksi terputus".
+  static const Duration connectTimeout = Duration(seconds: 20);
+  static const Duration receiveTimeout = Duration(seconds: 45);
   static const Duration sendTimeout = Duration(seconds: 30);
 
   // File Upload Limits

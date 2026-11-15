@@ -12,6 +12,7 @@ import '../controllers/auth_notifier.dart';
 import '../controllers/auth_state.dart';
 import '../widgets/auth_field.dart';
 import '../widgets/auth_shell.dart';
+import '../widgets/auth_success_overlay.dart';
 
 /// Layar Masuk.
 ///
@@ -64,12 +65,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } else if (authState.status == AuthStatus.needsEmailVerification) {
       context.go(AppRoutes.verifyEmail);
     } else if (success) {
+      final name = authState.user?.name;
+
+      // Animasi sukses singkat sebelum berpindah layar: perpindahan terasa
+      // disengaja, bukan lompatan.
+      await showAuthSuccessOverlay(
+        context,
+        title: 'Berhasil Masuk',
+        message: (name != null && name.trim().isNotEmpty)
+            ? 'Selamat datang kembali, $name. Menyiapkan berandamu…'
+            : 'Selamat datang kembali di TemuKampus.',
+      );
+
+      if (!mounted) return;
+
       if (widget.redirectUrl != null && widget.redirectUrl!.isNotEmpty) {
         context.go(widget.redirectUrl!);
       } else {
         context.go(AppRoutes.home);
       }
     }
+
   }
 
   void _showSuspendedDialog(String? reason) {

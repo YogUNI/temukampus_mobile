@@ -11,6 +11,7 @@ import 'package:temukampus_mobile/features/auth/presentation/screens/forgot_pass
 import 'package:temukampus_mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/register_screen.dart';
 import 'package:temukampus_mobile/features/auth/presentation/screens/splash_screen.dart';
+import 'package:temukampus_mobile/features/auth/presentation/widgets/auth_success_overlay.dart';
 
 import 'auth_notifier_test.dart';
 import 'helpers/fake_api.dart';
@@ -133,6 +134,42 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('pratinjau NIM memakai prodi yang benar untuk kode 411',
+        (tester) async {
+      await _pumpToLogin(tester);
+      await tapText(tester, 'Daftar Akun Baru');
+
+      final nimField =
+          find.widgetWithText(TextFormField, '11 digit, misal 41524010001');
+      await tester.ensureVisible(nimField);
+      await tester.pumpAndSettle();
+      await tester.enterText(nimField, '41124010001');
+      await tester.pumpAndSettle();
+
+      // Regresi: 411 = Teknik Sipil menurut database, bukan Teknik Arsitektur.
+      expect(find.text('Teknik Sipil'), findsOneWidget);
+      expect(find.text('Fakultas Teknik'), findsOneWidget);
+      expect(find.text('Angkatan: 2024'), findsOneWidget);
+    });
+
+    testWidgets('kode prodi tak dikenal memunculkan peringatan, bukan blokir',
+        (tester) async {
+      await _pumpToLogin(tester);
+      await tapText(tester, 'Daftar Akun Baru');
+
+      final nimField =
+          find.widgetWithText(TextFormField, '11 digit, misal 41524010001');
+      await tester.ensureVisible(nimField);
+      await tester.pumpAndSettle();
+      await tester.enterText(nimField, '99924010001');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('belum terdaftar'), findsOneWidget);
+      expect(find.text('Kode: 999'), findsOneWidget);
+      expect(find.text('Angkatan: 2024'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('tidak overflow di layar sempit 360dp', (tester) async {
       await _pumpToLogin(tester, size: const Size(360, 780));
       await tapText(tester, 'Daftar Akun Baru');
@@ -150,6 +187,32 @@ void main() {
           FakeRoute(method: 'GET', path: '/events', body: apiFixture('events_index.json')),
           FakeRoute(method: 'GET', path: '/categories', body: apiFixture('categories.json')),
         ]);
+
+    testWidgets('animasi sukses tampil sebelum berpindah ke beranda',
+        (tester) async {
+      final adapter = buildAdapter();
+      await _pumpToLogin(
+        tester,
+        extraOverrides: [apiClientProvider.overrideWithValue(fakeApiClient(adapter))],
+      );
+
+      await tester.enterText(find.byType(TextField).at(0), 'peserta1@example.test');
+      await tester.enterText(find.byType(TextField).at(1), 'password');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Masuk Sekarang'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Layar sukses muncul sebagai jeda yang disengaja sebelum beranda.
+      expect(find.byType(AuthSuccessOverlay), findsOneWidget);
+      expect(find.text('Berhasil Masuk'), findsOneWidget);
+
+      // Setelah animasi selesai, overlay hilang dan beranda tampil.
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+      expect(find.byType(AuthSuccessOverlay), findsNothing);
+      expect(find.text('Halo, Peserta!'), findsOneWidget);
+    });
 
     testWidgets('mengisi form, masuk, lalu beranda menyapa nama pengguna', (tester) async {
       final adapter = buildAdapter();

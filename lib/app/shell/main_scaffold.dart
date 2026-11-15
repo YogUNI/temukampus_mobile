@@ -65,13 +65,15 @@ class MainScaffold extends StatelessWidget {
   }
 }
 
-/// Dock kapsul mengambang. Publik agar geometrinya bisa diverifikasi tes.
+/// Dock navigasi kapsul mengambang dengan **pil penanda yang bergeser halus**.
+///
+/// Publik agar geometrinya bisa diverifikasi tes.
 ///
 /// Geometri (semua bilangan 8-pt grid, diverifikasi `event_grid_layout_test`):
 /// - tinggi 68, radius 30, margin samping 20, inset bawah 12
 /// - item lebar sama (Expanded), target sentuh >= 44x44
-/// - item aktif = kapsul cobalt dengan ikon putih + label tebal (gaya tab bar
-///   iOS 26: kapsul di sekitar ikon, bukan pil besar di belakang seluruh item)
+/// - pil aktif bergeser (`AnimatedAlign`) ke tengah item terpilih, sehingga
+///   perpindahan tab terasa seperti satu gerakan, bukan dua kedipan.
 class FloatingNavDock extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onIndexChanged;
@@ -102,8 +104,21 @@ class FloatingNavDock extends StatelessWidget {
   /// Margin kiri/kanan dock terhadap tepi layar.
   static const double dockMargin = AppSpacing.gutter;
 
+  /// Tinggi pil penanda di dalam dock.
+  static const double pillHeight = 54;
+
+  /// Durasi pil bergeser antar tab.
+  static const Duration pillSlideDuration = Duration(milliseconds: 340);
+
   @override
   Widget build(BuildContext context) {
+    final count = _items.length;
+
+    // -1 (paling kiri) .. +1 (paling kanan); dengan lebar pil 1/count, titik
+    // tengahnya jatuh tepat di tengah tiap item.
+    final pillAlignment =
+        count > 1 ? -1.0 + (2.0 * selectedIndex) / (count - 1) : 0.0;
+
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(
@@ -120,33 +135,68 @@ class FloatingNavDock extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(dockRadius),
           border: Border.all(color: AppColors.ink100, width: 1.2),
-          boxShadow: [
+          boxShadow: const [
             // Dua lapis: bayangan jauh yang lembut + bayangan dekat yang tegas,
             // supaya dock benar-benar "mengambang" di atas konten.
-            const BoxShadow(
+            BoxShadow(
               color: Color(0x2412162B),
               offset: Offset(0, 12),
               blurRadius: 32,
             ),
-            const BoxShadow(
+            BoxShadow(
               color: Color(0x1212162B),
               offset: Offset(0, 3),
               blurRadius: 9,
             ),
           ],
         ),
-        child: Row(
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            for (var i = 0; i < _items.length; i++)
-              Expanded(
-                child: _DockItem(
-                  label: _items[i].label,
-                  icon: _items[i].icon,
-                  activeIcon: _items[i].activeIcon,
-                  isSelected: selectedIndex == i,
-                  onTap: () => onIndexChanged(i),
+            // Pil penanda: satu elemen yang bergeser, bukan empat kapsul terpisah.
+            AnimatedAlign(
+              key: const ValueKey('nav_dock_pill'),
+              duration: pillSlideDuration,
+              curve: Curves.easeOutCubic,
+              alignment: Alignment(pillAlignment, 0),
+              child: FractionallySizedBox(
+                widthFactor: 1 / count,
+                child: Container(
+                  height: pillHeight,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.cobalt, AppColors.cobaltDark],
+                    ),
+                    borderRadius: BorderRadius.circular(pillHeight / 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.cobalt.withValues(alpha: 0.34),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            ),
+
+            Row(
+              children: [
+                for (var i = 0; i < count; i++)
+                  Expanded(
+                    child: _DockItem(
+                      label: _items[i].label,
+                      icon: _items[i].icon,
+                      activeIcon: _items[i].activeIcon,
+                      isSelected: selectedIndex == i,
+                      onTap: () => onIndexChanged(i),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),
@@ -169,12 +219,13 @@ class _DockItem extends StatelessWidget {
     required this.onTap,
   });
 
-  /// Kapsul ikon aktif: 46x32 (ikon 20 di dalamnya).
-  static const double activeCapsuleWidth = 46;
-  static const double activeCapsuleHeight = 32;
-
   @override
   Widget build(BuildContext context) {
+    // Ikon aktif membesar sedikit + bergeser naik 1pt: cukup untuk terasa
+    // "hidup" tanpa membuat teks label ikut melompat.
+    final iconColor = isSelected ? Colors.white : AppColors.ink400;
+    final labelColor = isSelected ? Colors.white : AppColors.ink500;
+
     return Semantics(
       button: true,
       selected: isSelected,
@@ -183,41 +234,28 @@ class _DockItem extends StatelessWidget {
         key: ValueKey('nav_dock_item_$label'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        splashColor: AppColors.cobalt.withValues(alpha: 0.05),
-        highlightColor: AppColors.cobalt.withValues(alpha: 0.03),
+        splashColor: AppColors.cobalt.withValues(alpha: 0.06),
+        highlightColor: Colors.transparent,
         child: SizedBox(
           height: 56,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Kapsul ikon: tumbuh + terisi cobalt saat aktif (iOS 26 style).
-              AnimatedContainer(
-                duration: AppDurations.base,
-                curve: Curves.easeOutCubic,
-                width: isSelected ? activeCapsuleWidth : 38,
-                height: isSelected ? activeCapsuleHeight : 30,
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.cobalt : Colors.transparent,
-                  borderRadius: BorderRadius.circular(activeCapsuleHeight / 2),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.cobalt.withValues(alpha: 0.32),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: AppDurations.fast,
-                    child: Icon(
-                      isSelected ? activeIcon : icon,
-                      key: ValueKey(isSelected),
-                      size: isSelected ? 20 : 23,
-                      color: isSelected ? Colors.white : AppColors.ink400,
-                    ),
+              AnimatedScale(
+                duration: FloatingNavDock.pillSlideDuration,
+                curve: Curves.easeOutBack,
+                scale: isSelected ? 1.12 : 1,
+                child: AnimatedSwitcher(
+                  duration: AppDurations.fast,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(scale: animation, child: child),
+                  ),
+                  child: Icon(
+                    isSelected ? activeIcon : icon,
+                    key: ValueKey(isSelected),
+                    size: 22,
+                    color: iconColor,
                   ),
                 ),
               ),
@@ -228,7 +266,7 @@ class _DockItem extends StatelessWidget {
                   fontSize: 10,
                   letterSpacing: 0,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  color: isSelected ? AppColors.cobalt : AppColors.ink400,
+                  color: labelColor,
                 ),
                 child: Text(
                   label,

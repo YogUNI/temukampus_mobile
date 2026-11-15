@@ -13,6 +13,7 @@ import '../../../../core/utils/nim_parser.dart';
 import '../controllers/auth_notifier.dart';
 import '../widgets/auth_field.dart';
 import '../widgets/auth_shell.dart';
+import '../widgets/auth_success_overlay.dart';
 import '../widgets/register_account_type_switch.dart';
 import '../widgets/register_nim_preview.dart';
 import '../widgets/register_password_meter.dart';
@@ -123,8 +124,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Konfirmasi beranimasi sebelum pindah ke layar verifikasi kode.
+      await showAuthSuccessOverlay(
+        context,
+        title: 'Akun Berhasil Dibuat',
+        message:
+            'Kami mengirim kode verifikasi 6 digit ke emailmu. Masukkan kodenya untuk mengaktifkan akun.',
+        footnote: _selectedTab == 0 ? 'Akun Mahasiswa UMB' : 'Akun Eksternal',
+      );
+
+      if (!mounted) return;
+
       context.go(AppRoutes.verifyEmail);
     }
+
   }
 
   @override

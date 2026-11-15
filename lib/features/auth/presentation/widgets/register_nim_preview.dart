@@ -77,6 +77,55 @@ class RegisterNimPreview extends StatelessWidget {
       );
     }
 
+    if (result.isUnknownProgram) {
+      return _Shell(
+        background: AppColors.signalLight,
+        borderColor: AppColors.signal.withValues(alpha: 0.45),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.help_outline_rounded, color: AppColors.ink, size: 15),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Kode prodi ${result.programCode} belum terdaftar',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelSmall.copyWith(
+                      fontSize: 12,
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'NIM tetap bisa dipakai mendaftar — panitia akan melengkapi data program studi. '
+              'Cek kembali 3 digit awal NIM-mu bila terasa keliru.',
+              style: AppTypography.micro.copyWith(
+                fontSize: 10.5,
+                color: AppColors.ink,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _Chip(label: 'Kode: ${result.programCode}'),
+                _Chip(label: 'Angkatan: ${result.cohortYear}'),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return _Shell(
       background: AppColors.cobaltLight,
       borderColor: AppColors.cobalt.withValues(alpha: 0.35),

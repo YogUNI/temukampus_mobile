@@ -9,6 +9,12 @@ class NimResult {
   final String? sequenceNumber;
   final String? errorMessage;
 
+  /// Kode prodi tidak ada di tabel referensi `study_programs`.
+  ///
+  /// Backend tetap menerima NIM seperti ini (kolom `study_program_id` dibiarkan
+  /// kosong), jadi ini peringatan, bukan penghalang.
+  final bool isUnknownProgram;
+
   const NimResult({
     required this.isValid,
     this.rawNim,
@@ -18,6 +24,7 @@ class NimResult {
     this.cohortYear,
     this.sequenceNumber,
     this.errorMessage,
+    this.isUnknownProgram = false,
   });
 
   /// Ringkasan ramah UI, misal "Teknik Informatika '24"
@@ -29,47 +36,60 @@ class NimResult {
 }
 
 /// Parser NIM resmi Mahasiswa Universitas Mercu Buana (UMB).
-/// Sesuai aturan domain BR-01, BR-02, BR-03:
+///
+/// Sumber kebenaran: tabel `study_programs` di backend
+/// (`database/seeders/data/study_programs.csv`) — 17 program studi.
+/// Aturan domain BR-01..BR-03:
 /// - Panjang tepat 11 digit numerik.
-/// - Digit 1–3: Kode Program Studi (e.g. 415 -> Teknik Informatika, 418 -> Sistem Informasi).
-/// - Digit 4–5: Angkatan Mahasiswa (20 + YY, e.g. 24 -> 2024).
-/// - Digit 6–11: Nomor urut unik mahasiswa.
+/// - Digit 1–3: kode program studi (415 = Teknik Informatika, 411 = Teknik Sipil, …).
+/// - Digit 4–5: dua digit terakhir angkatan (20 + YY, mis. 24 → 2024),
+///   dan angkatan tidak boleh melewati tahun berjalan.
+/// - Digit 6–11: nomor urut mahasiswa.
 class NimParser {
   NimParser._();
 
+  /// Kode prodi → (nama prodi, nama fakultas).
+  ///
+  /// WAJIB identik dengan `study_programs.csv` + `faculties.csv` di repo web.
+  /// Sebelumnya tabel ini salah hampir seluruhnya (411 tertukar dengan 415,
+  /// 441/443 tertukar, 419/417/423 memakai kode lama 551/552/553), sehingga
+  /// pratinjau menampilkan prodi yang tidak sesuai NIM.
   static const Map<String, (String programName, String facultyName)> _programDictionary = {
+    // Fakultas Teknik (FT)
+    '411': ('Teknik Sipil', 'Fakultas Teknik'),
+    '412': ('Teknik Arsitektur', 'Fakultas Teknik'),
+    '413': ('Teknik Mesin', 'Fakultas Teknik'),
+    '414': ('Teknik Elektro', 'Fakultas Teknik'),
+    '416': ('Teknik Industri', 'Fakultas Teknik'),
+
     // Fakultas Ilmu Komputer (FASILKOM)
     '415': ('Teknik Informatika', 'Fakultas Ilmu Komputer'),
     '418': ('Sistem Informasi', 'Fakultas Ilmu Komputer'),
 
-    // Fakultas Teknik (FT)
-    '411': ('Teknik Arsitektur', 'Fakultas Teknik'),
-    '412': ('Teknik Mesin', 'Fakultas Teknik'),
-    '413': ('Teknik Elektro', 'Fakultas Teknik'),
-    '414': ('Teknik Sipil', 'Fakultas Teknik'),
-    '416': ('Teknik Industri', 'Fakultas Teknik'),
+    // Fakultas Desain dan Seni Kreatif (FDSK)
+    '417': ('Desain Interior', 'Fakultas Desain dan Seni Kreatif'),
+    '419': ('Desain Produk', 'Fakultas Desain dan Seni Kreatif'),
+    '423': ('Desain Komunikasi Visual', 'Fakultas Desain dan Seni Kreatif'),
 
     // Fakultas Ekonomi dan Bisnis (FEB)
-    '421': ('Manajemen', 'Fakultas Ekonomi dan Bisnis'),
-    '422': ('Akuntansi', 'Fakultas Ekonomi dan Bisnis'),
+    '431': ('Manajemen', 'Fakultas Ekonomi dan Bisnis'),
+    '432': ('Akuntansi', 'Fakultas Ekonomi dan Bisnis'),
 
     // Fakultas Ilmu Komunikasi (FIKOM)
-    '441': ('Ilmu Komunikasi', 'Fakultas Ilmu Komunikasi'),
-    '442': ('Hubungan Masyarakat (PR)', 'Fakultas Ilmu Komunikasi'),
-    '443': ('Broadcasting (Penyiaran)', 'Fakultas Ilmu Komunikasi'),
-    '444': ('Periklanan & Komunikasi Pemasaran', 'Fakultas Ilmu Komunikasi'),
+    '441': ('Broadcasting', 'Fakultas Ilmu Komunikasi'),
+    '442': ('Public Relations', 'Fakultas Ilmu Komunikasi'),
+    '443': ('Marketing Komunikasi', 'Fakultas Ilmu Komunikasi'),
+    '445': ('Digital Komunikasi', 'Fakultas Ilmu Komunikasi'),
 
-    // Fakultas Psikologi
+    // Fakultas Psikologi (FPSI)
     '461': ('Psikologi', 'Fakultas Psikologi'),
-
-    // Fakultas Desain dan Seni Kreatif (FDSK)
-    '551': ('Desain Produk', 'Fakultas Desain dan Seni Kreatif'),
-    '552': ('Desain Interior', 'Fakultas Desain dan Seni Kreatif'),
-    '553': ('Desain Komunikasi Visual (DKV)', 'Fakultas Desain dan Seni Kreatif'),
   };
 
+  /// Semua kode program studi yang dikenal (untuk tes & dokumentasi).
+  static List<String> get knownProgramCodes => _programDictionary.keys.toList()..sort();
+
   /// Memvalidasi dan mengekstrak info akademik dari NIM 11 digit.
-  static NimResult parse(String? rawNim) {
+  static NimResult parse(String? rawNim, {DateTime? now}) {
     if (rawNim == null || rawNim.trim().isEmpty) {
       return const NimResult(
         isValid: false,
@@ -77,7 +97,8 @@ class NimParser {
       );
     }
 
-    final cleaned = rawNim.trim();
+    // Spasi dan tanda hubung dibersihkan lebih dulu (E-02 di sisi web).
+    final cleaned = rawNim.replaceAll(RegExp(r'[\s-]+'), '').trim();
 
     if (!RegExp(r'^[0-9]+$').hasMatch(cleaned)) {
       return const NimResult(
@@ -94,33 +115,38 @@ class NimParser {
     }
 
     final programCode = cleaned.substring(0, 3);
-    final yearSuffix = cleaned.substring(3, 5);
+    final yearSuffix = int.tryParse(cleaned.substring(3, 5));
     final sequence = cleaned.substring(5, 11);
 
-    final parsedYearSuffix = int.tryParse(yearSuffix);
-    if (parsedYearSuffix == null) {
+    if (yearSuffix == null) {
       return const NimResult(
         isValid: false,
         errorMessage: 'Format tahun angkatan pada NIM tidak valid.',
       );
     }
 
-    // Rentang tahun 2000-2099
-    final cohortYear = 2000 + parsedYearSuffix;
+    // 2000 + YY, dan tidak boleh melewati tahun berjalan (BR-03).
+    final cohortYear = 2000 + yearSuffix;
+    final currentYear = (now ?? DateTime.now()).year;
+
+    if (cohortYear < 2000 || cohortYear > currentYear) {
+      return NimResult(
+        isValid: false,
+        errorMessage: 'Angkatan $cohortYear belum valid. Tahun angkatan maksimal $currentYear.',
+      );
+    }
 
     final programInfo = _programDictionary[programCode];
-    final programName = programInfo?.$1 ?? 'Program Studi $programCode';
-    final facultyName = programInfo?.$2 ?? 'Universitas Mercu Buana';
 
     return NimResult(
       isValid: true,
       rawNim: cleaned,
       programCode: programCode,
-      programName: programName,
-      facultyName: facultyName,
+      programName: programInfo?.$1,
+      facultyName: programInfo?.$2,
       cohortYear: cohortYear,
       sequenceNumber: sequence,
+      isUnknownProgram: programInfo == null,
     );
   }
 }
-

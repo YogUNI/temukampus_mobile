@@ -11,8 +11,9 @@ import '../../../../core/services/notification_service.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../notifications/presentation/providers/notification_permission_provider.dart';
 import '../../../../core/utils/image_compressor.dart';
-import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
+import '../widgets/logout_sheet.dart';
+import '../widgets/profile_hero_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -22,46 +23,25 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  void _showLogoutDialog() {
+  Future<void> _showLogoutDialog() async {
     AppHaptics.light();
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.ink, width: 1.5),
-          ),
-          backgroundColor: AppColors.surface,
-          title: Text('Konfirmasi Keluar', style: AppTypography.titleSmall),
-          content: Text(
-            'Apakah Anda yakin ingin keluar dari akun TemuKampus?',
-            style: AppTypography.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('Batal', style: AppTypography.label.copyWith(color: AppColors.ink500)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await ref.read(authNotifierProvider.notifier).logout();
-                if (mounted) {
-                  context.go(AppRoutes.login);
-                }
-              },
-              child: const Text('Keluar'),
-            ),
-          ],
-        );
-      },
+
+    final user = ref.read(authNotifierProvider).user;
+
+    final confirmed = await showLogoutSheet(
+      context,
+      name: user?.name,
+      subtitle: user?.nim != null
+          ? 'NIM ${user!.nim} akan keluar dari perangkat ini. Tiket dan riwayatmu tetap tersimpan.'
+          : null,
     );
+
+    if (!confirmed || !mounted) return;
+
+    await ref.read(authNotifierProvider.notifier).logout();
+
+    if (!mounted) return;
+    context.go(AppRoutes.login);
   }
 
   /// Snackbar ringkas dengan warna status (mint = sukses, danger = galat).
@@ -730,131 +710,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           children: [
-            // 1. Avatar & Info Utama
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.ink, width: 1.4),
-                boxShadow: const [
-                  BoxShadow(color: AppColors.ink, offset: Offset(3, 3), blurRadius: 0),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.cobalt, width: 2),
-                        ),
-                        child: ClipOval(
-                          child: const AppNetworkOrAssetImage(
-                            imagePath: 'assets/images/avatars/user_avatar.jpg',
-                            width: 76,
-                            height: 76,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _showChangeAvatarSheet,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppColors.cobalt,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
-                            ),
-                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(user.name, style: AppTypography.titleMedium.copyWith(fontSize: 17)),
-                  const SizedBox(height: 3),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(user.email, style: AppTypography.bodySmall),
-                      if (user.emailVerified) ...[
-                        const SizedBox(width: 4),
-                        const Icon(Icons.verified_rounded, color: AppColors.mint, size: 15),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.cobaltLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.cobalt.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      user.academicSummary,
-                      style: AppTypography.badge.copyWith(color: AppColors.cobalt),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            // 2. Akumulasi Poin SKP Kemahasiswaan
-            TicketContainer(
-              punchRadius: 10.0,
-              punchPositionPercent: 0.5,
-              borderRadius: 14.0,
-              borderColor: AppColors.ink,
-              borderWidth: 1.2,
-              hasShadow: true,
-              shadowOffset: const Offset(2.5, 2.5),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.mintLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.stars_rounded, color: AppColors.mint, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('AKUMULASI SKP', style: AppTypography.labelSmall.copyWith(fontSize: 9, color: AppColors.ink400)),
-                            Text('12 Poin Terkumpul', style: AppTypography.titleSmall.copyWith(fontSize: 15, color: AppColors.mintText)),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.mintLight,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text('AKTIF', style: AppTypography.badge.copyWith(color: AppColors.mintText, fontSize: 10)),
-                    ),
-                  ],
-                ),
-              ),
+            // 1. Kartu identitas utama: avatar, prodi/angkatan, NIM, status akun.
+            ProfileHeroCard(
+              user: user,
+              onAvatarTap: _showChangeAvatarSheet,
             ),
             const SizedBox(height: 18),
 

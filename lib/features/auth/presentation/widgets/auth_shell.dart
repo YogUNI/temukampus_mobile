@@ -55,13 +55,15 @@ class AuthShell extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (onBack != null) ...[
-                    _BackButton(onTap: onBack!),
-                    const SizedBox(height: AppSpacing.lg),
-                  ] else
-                    const SizedBox(height: AppSpacing.sm),
-
-                  const _BrandRow(),
+                  // Tombol kembali menempel pada baris brand (kanan atas), bukan
+                  // baris sendiri di atas logo: hemat satu baris tinggi dan
+                  // sejajar dengan lockup brand.
+                  Row(
+                    children: [
+                      const Expanded(child: _BrandRow()),
+                      if (onBack != null) _BackButton(onTap: onBack!),
+                    ],
+                  ),
                   const SizedBox(height: AppSpacing.xxl),
 
                   if (eyebrow != null) ...[
@@ -218,7 +220,7 @@ class _BrandRow extends StatelessWidget {
   }
 }
 
-/// Latar gradasi cobalt + pola tiket samar (memberi tekstur, bukan bidang datar).
+/// Latar gradasi cobalt + pola tiket (memberi tekstur & kedalaman, bukan bidang datar).
 class _AuthBackdrop extends StatelessWidget {
   const _AuthBackdrop();
 
@@ -239,24 +241,68 @@ class _AuthBackdrop extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            // Kilau diagonal: memberi kesan permukaan kertas metalik.
+            Positioned(
+              top: -120,
+              left: -60,
+              right: -60,
+              height: 300,
+              child: Transform.rotate(
+                angle: -0.35,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.14),
+                        Colors.white.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
             // Sorotan lembut di kanan atas
             Positioned(
               top: -70,
               right: -50,
               child: Container(
-                width: 220,
-                height: 220,
+                width: 240,
+                height: 240,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      Colors.white.withValues(alpha: 0.16),
+                      Colors.white.withValues(alpha: 0.20),
                       Colors.white.withValues(alpha: 0),
                     ],
                   ),
                 ),
               ),
             ),
+
+            // Cahaya hangat dari bawah supaya peralihan ke kartu putih terasa lembut.
+            Positioned(
+              bottom: -80,
+              left: -40,
+              right: -40,
+              height: 200,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      AppColors.signal.withValues(alpha: 0.22),
+                      AppColors.signal.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(painter: _TicketPatternPainter()),
@@ -269,39 +315,116 @@ class _AuthBackdrop extends StatelessWidget {
   }
 }
 
-/// Pola garis tiket (outline + perforasi) yang sangat samar.
+/// Pola tiket: outline, garis perforasi putus-putus, cekungan sobekan, dan
+/// barcode tipis. Opasitas dinaikkan (0.09 → 0.18) supaya motifnya benar-benar
+/// terbaca sebagai tiket, bukan noda samar.
 class _TicketPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
+  void _ticket(
+    Canvas canvas, {
+    required Rect rect,
+    required double rotation,
+    required double alpha,
+    bool withBarcode = true,
+    double fillAlpha = 0.0,
+    double strokeWidth = 1.3,
+  }) {
     final stroke = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Colors.white.withValues(alpha: 0.09);
+      ..strokeWidth = strokeWidth
+      ..color = Colors.white.withValues(alpha: alpha);
 
-    void ticket(Rect rect, double rotation) {
-      canvas.save();
-      canvas.translate(rect.center.dx, rect.center.dy);
-      canvas.rotate(rotation);
-      final r = Rect.fromCenter(
-        center: Offset.zero,
-        width: rect.width,
-        height: rect.height,
-      );
+    final soft = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..color = Colors.white.withValues(alpha: alpha * 0.8);
+
+    canvas.save();
+    canvas.translate(rect.center.dx, rect.center.dy);
+    canvas.rotate(rotation);
+
+    final r = Rect.fromCenter(
+      center: Offset.zero,
+      width: rect.width,
+      height: rect.height,
+    );
+    final radius = Radius.circular(r.height * 0.16);
+    final shape = RRect.fromRectAndRadius(r, radius);
+
+    // Isian tipis: membuat bentuknya terbaca sebagai tiket, bukan sekadar garis.
+    if (fillAlpha > 0) {
       canvas.drawRRect(
-        RRect.fromRectAndRadius(r, const Radius.circular(14)),
-        stroke,
+        shape,
+        Paint()..color = Colors.white.withValues(alpha: fillAlpha),
       );
-      // garis perforasi vertikal
-      final x = r.left + r.width * 0.68;
-      for (double y = r.top + 8; y < r.bottom - 6; y += 8) {
-        canvas.drawLine(Offset(x, y), Offset(x, y + 4), stroke);
-      }
-      canvas.restore();
     }
 
-    ticket(Rect.fromLTWH(size.width - 150, 22, 150, 86), -0.22);
-    ticket(Rect.fromLTWH(-40, 120, 128, 74), 0.16);
-    ticket(Rect.fromLTWH(size.width - 96, 190, 130, 78), 0.28);
+    canvas.drawRRect(shape, stroke);
+
+    // Garis perforasi vertikal + cekungan sobekan di ujung atas & bawah.
+    final x = r.left + r.width * 0.66;
+    for (double y = r.top + 10; y < r.bottom - 8; y += 9) {
+      canvas.drawLine(Offset(x, y), Offset(x, y + 4.5), soft);
+    }
+    canvas.drawCircle(Offset(x, r.top), 4.5, stroke);
+    canvas.drawCircle(Offset(x, r.bottom), 4.5, stroke);
+
+    // Barcode tipis di sisi kiri (bagian "kode tiket").
+    if (withBarcode) {
+      final baseline = r.top + r.height * 0.72;
+      var bx = r.left + r.width * 0.14;
+      const widths = [1.2, 2.4, 1.0, 3.0, 1.4, 2.0, 1.0];
+      for (var i = 0; i < widths.length; i++) {
+        canvas.drawLine(
+          Offset(bx, baseline),
+          Offset(bx, baseline - r.height * 0.22),
+          Paint()
+            ..strokeWidth = widths[i]
+            ..color = Colors.white.withValues(alpha: alpha * 0.9),
+        );
+        bx += widths[i] + 3.2;
+      }
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Tiket besar yang menjulur keluar dari tepi kiri atas.
+    _ticket(
+      canvas,
+      rect: Rect.fromLTWH(-52, 34, 168, 96),
+      rotation: 0.20,
+      alpha: 0.22,
+      fillAlpha: 0.04,
+    );
+
+    // Tiket utama di kanan atas — paling jelas, jadi wajah motif ini.
+    _ticket(
+      canvas,
+      rect: Rect.fromLTWH(size.width - 168, 44, 178, 102),
+      rotation: -0.16,
+      alpha: 0.32,
+      fillAlpha: 0.07,
+      strokeWidth: 1.6,
+    );
+
+    // Dua tiket kecil sebagai irama di tengah.
+    _ticket(
+      canvas,
+      rect: Rect.fromLTWH(size.width - 120, 178, 132, 78),
+      rotation: 0.26,
+      alpha: 0.22,
+      fillAlpha: 0.03,
+    );
+    _ticket(
+      canvas,
+      rect: Rect.fromLTWH(-18, 196, 118, 70),
+      rotation: -0.22,
+      alpha: 0.18,
+      fillAlpha: 0.03,
+      withBarcode: false,
+    );
   }
 
   @override
