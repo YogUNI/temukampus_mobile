@@ -13,10 +13,14 @@ class HomeHeader extends StatelessWidget {
   final UserModel? user;
   final VoidCallback onNotificationTap;
 
+  /// Jumlah notifikasi belum dibaca; 0 menyembunyikan badge.
+  final int unreadCount;
+
   const HomeHeader({
     super.key,
     required this.user,
     required this.onNotificationTap,
+    this.unreadCount = 0,
   });
 
   @override
@@ -100,18 +104,30 @@ class HomeHeader extends StatelessWidget {
                   color: AppColors.ink,
                   size: 22,
                 ),
-                Positioned(
-                  top: 12,
-                  right: 13,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.signal,
-                      shape: BoxShape.circle,
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 18),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.signal,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.surface, width: 1.5),
+                      ),
+                      child: Text(
+                        unreadCount > 9 ? '9+' : '$unreadCount',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.labelSmall.copyWith(
+                          fontSize: 9,
+                          height: 1.1,
+                          color: AppColors.ink,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

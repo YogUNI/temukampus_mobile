@@ -12,6 +12,7 @@ import '../../features/auth/presentation/screens/verify_email_screen.dart';
 import '../../features/events/presentation/screens/event_detail_screen.dart';
 import '../../features/events/presentation/screens/explore_screen.dart';
 import '../../features/events/presentation/screens/home_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/registration/presentation/screens/registration_screen.dart';
 import '../../features/scanner/presentation/screens/event_gate_selector_screen.dart';
@@ -205,6 +206,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _buildSlideTransition(
           state: state,
           child: const ForgotPasswordScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const NotificationsScreen(),
         ),
       ),
       GoRoute(

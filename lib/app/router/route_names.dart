@@ -25,6 +25,7 @@ class AppRoutes {
   static const String scannerGate = '/scanner/:eventId';
   static String scannerGatePath(int eventId) => '/scanner/$eventId';
 
+  static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String editProfile = '/profile/edit';
   static const String changePassword = '/profile/change-password';

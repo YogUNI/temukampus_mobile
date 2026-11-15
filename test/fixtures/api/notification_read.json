@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "message": "Notifikasi ditandai sudah dibaca.",
+  "data": {
+    "id": "ccb0c52d-e133-45cc-8539-cc910ef5c4ad",
+    "is_read": true,
+    "unread_count": 0
+  }
+}

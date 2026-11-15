@@ -21,6 +21,7 @@ import '../widgets/featured_event_carousel.dart';
 import '../widgets/filter_chip_bar.dart';
 import '../widgets/home_header.dart';
 import '../widgets/home_quick_filters.dart';
+import '../../../notifications/presentation/providers/notifications_badge_provider.dart';
 
 /// Beranda TemuKampus.
 ///
@@ -54,10 +55,11 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 HomeHeader(
                   user: user,
-                  onNotificationTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Belum ada notifikasi baru.')),
-                    );
+                  unreadCount: ref.watch(unreadNotificationsProvider).valueOrNull ?? 0,
+                  onNotificationTap: () async {
+                    await context.push(AppRoutes.notifications);
+                    // Kembali dari pusat notifikasi: segarkan badge.
+                    ref.invalidate(unreadNotificationsProvider);
                   },
                 ),
                 if (user == null) ...[

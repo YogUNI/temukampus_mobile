@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "ccb0c52d-e133-45cc-8539-cc910ef5c4ad",
+      "title": "Pendaftaran terkonfirmasi",
+      "message": "Kamu terdaftar di Acara Uji Notifikasi. Kode tiket TK-5JX89K.",
+      "category": "registration",
+      "icon": "ticket",
+      "action": {
+        "label": "Lihat tiket",
+        "route": "/tickets/TK-5JX89K"
+      },
+      "is_read": false,
+      "read_at": null,
+      "created_at": "2026-11-15T10:19:40+07:00"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 20,
+    "total": 1
+  },
+  "unread_count": 1
+}
