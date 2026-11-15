@@ -62,10 +62,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  /// Snackbar ringkas dengan warna status (mint = sukses, danger = galat).
+  void _showSnack(BuildContext context, String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.danger : AppColors.mint,
+      ),
+    );
+  }
+
+  /// Ambil/unggah foto profil ke `POST /profile/avatar`.
+  Future<void> _handleAvatarPick(ImageSource source) async {
+    final data = await AppImageHelper.pickImage(source);
+    if (data == null) return;
+
+    final error = await ref.read(authNotifierProvider.notifier).updateAvatar(data);
+    if (!mounted) return;
+
+    if (error == null) {
+      AppHaptics.success();
+      _showSnack(context, 'Foto profil berhasil diubah.');
+    } else {
+      AppHaptics.error();
+      _showSnack(context, error, isError: true);
+    }
+  }
+
   void _showChangePasswordSheet() {
     AppHaptics.light();
     final oldPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
+    final confirmController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -120,17 +148,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       prefixIcon: Icon(Icons.lock_reset_rounded, color: AppColors.cobalt),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Ulangi Kata Sandi Baru',
+                      prefixIcon: Icon(Icons.verified_user_rounded, color: AppColors.cobalt),
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     child: StickerButton(
                       label: 'Simpan Kata Sandi',
                       variant: StickerButtonVariant.primary,
-                      onPressed: () {
-                        if (newPasswordController.text.trim().length >= 8) {
+                      onPressed: () async {
+                        final current = oldPasswordController.text;
+                        final next = newPasswordController.text;
+                        final confirm = confirmController.text;
+
+                        if (next.trim().length < 8) {
+                          AppHaptics.error();
+                          _showSnack(ctx, 'Kata sandi baru minimal 8 karakter.', isError: true);
+                          return;
+                        }
+
+                        if (next != confirm) {
+                          AppHaptics.error();
+                          _showSnack(ctx, 'Konfirmasi kata sandi tidak cocok.', isError: true);
+                          return;
+                        }
+
+                        // Server memeriksa kata sandi saat ini & aturan kekuatan
+                        // (sama dengan halaman /profil web).
+                        final messenger = ScaffoldMessenger.of(ctx);
+                        final error = await ref.read(authNotifierProvider.notifier).changePassword(
+                              currentPassword: current,
+                              newPassword: next,
+                              confirmation: confirm,
+                            );
+
+                        if (!ctx.mounted) return;
+
+                        if (error == null) {
                           Navigator.pop(ctx);
                           AppHaptics.success();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Kata sandi berhasil diperbarui!'),
                               backgroundColor: AppColors.mint,
@@ -138,11 +202,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           );
                         } else {
                           AppHaptics.error();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Kata sandi baru minimal 8 karakter.'),
-                              backgroundColor: AppColors.danger,
-                            ),
+                          messenger.showSnackBar(
+                            SnackBar(content: Text(error), backgroundColor: AppColors.danger),
                           );
                         }
                       },
@@ -211,12 +272,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: StickerButton(
                       label: 'Simpan Nomor',
                       variant: StickerButtonVariant.primary,
-                      onPressed: () {
+                      onPressed: () async {
                         final val = phoneController.text.trim();
-                        if (val.length >= 10) {
+                        final user = ref.read(authNotifierProvider).user;
+                        final messenger = ScaffoldMessenger.of(ctx);
+
+                        // Nomor divalidasi backend (`Phone::isValid`) — sama
+                        // dengan form profil web, jadi format apa pun yang sah
+                        // diterima tanpa aturan ganda di klien.
+                        final error = await ref.read(authNotifierProvider.notifier).updateProfile(
+                              name: user?.name ?? '',
+                              phone: val,
+                              institutionName: user?.institutionName,
+                            );
+
+                        if (!ctx.mounted) return;
+
+                        if (error == null) {
                           Navigator.pop(ctx);
                           AppHaptics.success();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Nomor WhatsApp berhasil diperbarui!'),
                               backgroundColor: AppColors.mint,
@@ -224,11 +299,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           );
                         } else {
                           AppHaptics.error();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Nomor WhatsApp tidak valid.'),
-                              backgroundColor: AppColors.danger,
-                            ),
+                          messenger.showSnackBar(
+                            SnackBar(content: Text(error), backgroundColor: AppColors.danger),
                           );
                         }
                       },
@@ -278,13 +350,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   title: Text('Ambil dari Kamera', style: AppTypography.titleSmall),
                   onTap: () async {
                     Navigator.pop(ctx);
-                    final data = await AppImageHelper.pickImage(ImageSource.camera);
-                    if (data != null && mounted) {
-                      AppHaptics.success();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Foto profil berhasil diubah.')),
-                      );
-                    }
+                    await _handleAvatarPick(ImageSource.camera);
                   },
                 ),
                 ListTile(
@@ -292,13 +358,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   title: Text('Pilih dari Galeri', style: AppTypography.titleSmall),
                   onTap: () async {
                     Navigator.pop(ctx);
-                    final data = await AppImageHelper.pickImage(ImageSource.gallery);
-                    if (data != null && mounted) {
-                      AppHaptics.success();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Foto profil berhasil diubah.')),
-                      );
-                    }
+                    await _handleAvatarPick(ImageSource.gallery);
                   },
                 ),
               ],

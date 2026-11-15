@@ -1,0 +1,11 @@
+{
+  "message": "Nama hanya boleh memuat huruf, spasi, titik, koma, dan tanda petik. (and 1 more error)",
+  "errors": {
+    "name": [
+      "Nama hanya boleh memuat huruf, spasi, titik, koma, dan tanda petik."
+    ],
+    "phone": [
+      "Nomor WhatsApp tidak valid."
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "message": "Foto profil diperbarui.",
+  "data": {
+    "id": 105,
+    "name": "Nama Setelah Ubah",
+    "email": "profil.uji.704060@example.test",
+    "role": "user",
+    "account_type": "umb",
+    "nim": "41525431448",
+    "phone": "+6281298765432",
+    "avatar_url": "http://temukampus.test/storage/avatars/atNRK14V8ihfaakKBee41AEFz5vwTqQs327CfSpd.png",
+    "institution_name": null,
+    "study_program": {
+      "id": 1,
+      "code": "415",
+      "name": "Teknik Informatika"
+    },
+    "cohort_year": 2025,
+    "email_verified": false,
+    "is_organizer": false,
+    "managed_organizations": [],
+    "status": "active",
+    "suspension_reason": null
+  }
+}

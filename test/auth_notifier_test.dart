@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:temukampus_mobile/core/utils/image_compressor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:temukampus_mobile/core/storage/secure_storage_service.dart';
 import 'package:temukampus_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
@@ -99,6 +103,15 @@ void main() {
       }),
       FakeRoute(method: 'POST', path: '/auth/logout', body: apiFixture('auth_logout.json')),
       FakeRoute(method: 'GET', path: '/auth/me', body: apiFixture('auth_me.json')),
+      FakeRoute(method: 'GET', path: '/profile', body: apiFixture('profile_show.json')),
+      FakeRoute(method: 'PUT', path: '/profile', body: apiFixture('profile_update.json')),
+      FakeRoute(method: 'PUT', path: '/profile/password', body: apiFixture('profile_password.json')),
+      FakeRoute(method: 'POST', path: '/profile/avatar', body: apiFixture('profile_avatar.json')),
+      FakeRoute(
+        method: 'DELETE',
+        path: '/profile/avatar',
+        body: {'success': true, 'message': 'Foto profil dihapus.', 'data': apiFixture('profile_show.json')['data']},
+      ),
     ]);
 
     storageService = SecureStorageService(storage: FakeSecureStorage());
@@ -212,6 +225,72 @@ void main() {
 
       expect(authNotifier.state.status, equals(AuthStatus.unauthenticated));
       expect(authNotifier.state.errorMessage, contains('Sesi Anda telah berakhir'));
+    });
+  });
+
+  group('Profil pengguna (API v1)', () {
+    test('updateProfile memperbarui state & penyimpanan', () async {
+      await authNotifier.login(login: 'peserta1@example.test', password: 'password');
+
+      final error = await authNotifier.updateProfile(
+        name: 'Nama Setelah Ubah',
+        phone: '081298765432',
+      );
+
+      expect(error, isNull);
+      expect(authNotifier.state.user?.name, equals('Nama Setelah Ubah'));
+      expect(adapter.requests, contains('PUT /profile'));
+    });
+
+    test('changePassword mengirim kata sandi saat ini & konfirmasi', () async {
+      final error = await authNotifier.changePassword(
+        currentPassword: 'Rahasia123',
+        newPassword: 'Rahasia456',
+        confirmation: 'Rahasia456',
+      );
+
+      expect(error, isNull);
+      expect(adapter.requests, contains('PUT /profile/password'));
+    });
+
+    test('changePassword salah menampilkan pesan dari server', () async {
+      buildNotifier();
+      adapter = FakeApiAdapter([
+        FakeRoute(
+          method: 'PUT',
+          path: '/profile/password',
+          body: apiFixture('profile_password_invalid.json'),
+          status: 422,
+        ),
+      ]);
+      final remoteDataSource = AuthRemoteDataSource(fakeApiClient(adapter));
+      authNotifier = AuthNotifier(AuthRepository(remoteDataSource, storageService));
+
+      final error = await authNotifier.changePassword(
+        currentPassword: 'SalahBanget1',
+        newPassword: 'Rahasia789',
+        confirmation: 'Rahasia789',
+      );
+
+      expect(error, contains('Password saat ini'));
+    });
+
+    test('updateAvatar menyimpan URL foto baru ke state', () async {
+      await authNotifier.login(login: 'peserta1@example.test', password: 'password');
+      final before = authNotifier.state.user?.avatarUrl;
+
+      final error = await authNotifier.updateAvatar(
+        PickedImageData(
+          file: XFile('avatar.png'),
+          bytes: Uint8List.fromList([1, 2, 3]),
+          sizeInBytes: 3,
+          fileName: 'avatar.png',
+        ),
+      );
+
+      expect(error, isNull);
+      expect(authNotifier.state.user?.avatarUrl, isNotNull);
+      expect(authNotifier.state.user?.avatarUrl, isNot(before));
     });
   });
 }

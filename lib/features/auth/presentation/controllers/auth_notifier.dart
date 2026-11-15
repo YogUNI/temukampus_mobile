@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/image_compressor.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_state.dart';
@@ -159,6 +160,75 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return await _repository.resendEmailCode();
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Perbarui nama / nomor WhatsApp / asal institusi.
+  ///
+  /// Mengembalikan `null` bila berhasil, atau pesan galat siap tampil.
+  Future<String?> updateProfile({
+    required String name,
+    String? phone,
+    String? institutionName,
+  }) async {
+    try {
+      final user = await _repository.updateProfile(
+        name: name,
+        phone: phone,
+        institutionName: institutionName,
+      );
+      state = AuthState.authenticated(user);
+      return null;
+    } on AppException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Gagal menyimpan perubahan. Periksa koneksi lalu coba lagi.';
+    }
+  }
+
+  /// Ganti kata sandi. `null` = berhasil.
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmation,
+  }) async {
+    try {
+      await _repository.updatePassword(
+        currentPassword: currentPassword,
+        password: newPassword,
+        passwordConfirmation: confirmation,
+      );
+      return null;
+    } on AppException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Gagal mengganti kata sandi. Periksa koneksi lalu coba lagi.';
+    }
+  }
+
+  /// Unggah foto profil. `null` = berhasil.
+  Future<String?> updateAvatar(PickedImageData image) async {
+    try {
+      final user = await _repository.uploadAvatar(image);
+      state = AuthState.authenticated(user);
+      return null;
+    } on AppException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Gagal mengunggah foto. Periksa koneksi lalu coba lagi.';
+    }
+  }
+
+  /// Hapus foto profil. `null` = berhasil.
+  Future<String?> removeAvatar() async {
+    try {
+      final user = await _repository.removeAvatar();
+      state = AuthState.authenticated(user);
+      return null;
+    } on AppException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Gagal menghapus foto. Periksa koneksi lalu coba lagi.';
     }
   }
 

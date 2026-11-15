@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/image_compressor.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_model.dart';
 
@@ -158,6 +159,93 @@ class AuthRemoteDataSource {
         ApiEndpoints.resendEmailCode,
       );
       return response.data?['message'] as String? ?? 'Kode verifikasi baru telah dikirimkan.';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
+  /// Perbarui profil (nama, nomor WhatsApp, asal institusi).
+  ///
+  /// Aturan validasi berasal dari `UpdateProfileRequest` di backend — sama
+  /// dengan halaman /profil web.
+  Future<UserModel> updateProfile({
+    required String name,
+    String? phone,
+    String? institutionName,
+  }) async {
+    try {
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        ApiEndpoints.updateProfile,
+        data: {
+          'name': name.trim(),
+          'phone': phone?.trim(),
+          if (institutionName != null) 'institution_name': institutionName.trim(),
+        },
+      );
+
+      final data = response.data!['data'] as Map<String, dynamic>;
+      return UserModel.fromJson(data);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
+  /// Ganti kata sandi (wajib menyertakan kata sandi saat ini).
+  Future<String> updatePassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        ApiEndpoints.changePassword,
+        data: {
+          'current_password': currentPassword,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+
+      return response.data?['message'] as String? ?? 'Kata sandi berhasil diperbarui.';
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
+  /// Unggah foto profil (multipart `avatar`, gambar hasil crop klien).
+  Future<UserModel> uploadAvatar(PickedImageData image) async {
+    try {
+      final formData = FormData.fromMap({
+        'avatar': MultipartFile.fromBytes(image.bytes, filename: image.fileName),
+      });
+
+      final response = await _apiClient.uploadMultipart<Map<String, dynamic>>(
+        '/profile/avatar',
+        formData: formData,
+      );
+
+      final data = response.data!['data'] as Map<String, dynamic>;
+      return UserModel.fromJson(data);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
+  /// Hapus foto profil (kembali ke inisial nama).
+  Future<UserModel> removeAvatar() async {
+    try {
+      final response = await _apiClient.delete<Map<String, dynamic>>('/profile/avatar');
+
+      final data = response.data!['data'] as Map<String, dynamic>;
+      return UserModel.fromJson(data);
     } on AppException {
       rethrow;
     } on DioException catch (e) {

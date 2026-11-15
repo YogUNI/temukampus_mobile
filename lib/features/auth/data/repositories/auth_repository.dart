@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/utils/image_compressor.dart';
 import '../datasources/auth_remote_datasource.dart';
 import '../models/user_model.dart';
 
@@ -90,6 +91,48 @@ class AuthRepository {
       }
     }
     return null;
+  }
+
+  /// Perbarui profil lalu simpan salinan terbaru ke penyimpanan aman.
+  Future<UserModel> updateProfile({
+    required String name,
+    String? phone,
+    String? institutionName,
+  }) async {
+    final user = await _remoteDataSource.updateProfile(
+      name: name,
+      phone: phone,
+      institutionName: institutionName,
+    );
+    await _storage.saveUserData(jsonEncode(user.toJson()));
+    return user;
+  }
+
+  /// Ganti kata sandi akun.
+  Future<String> updatePassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) {
+    return _remoteDataSource.updatePassword(
+      currentPassword: currentPassword,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+    );
+  }
+
+  /// Unggah foto profil baru.
+  Future<UserModel> uploadAvatar(PickedImageData image) async {
+    final user = await _remoteDataSource.uploadAvatar(image);
+    await _storage.saveUserData(jsonEncode(user.toJson()));
+    return user;
+  }
+
+  /// Hapus foto profil.
+  Future<UserModel> removeAvatar() async {
+    final user = await _remoteDataSource.removeAvatar();
+    await _storage.saveUserData(jsonEncode(user.toJson()));
+    return user;
   }
 
   /// Memeriksa apakah token akses tersimpan
