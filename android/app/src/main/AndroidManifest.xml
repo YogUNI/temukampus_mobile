@@ -2,7 +2,8 @@
     <!-- Notifikasi sistem (Android 13+): diminta saat pengguna mengaktifkan -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="temukampus_mobile"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:label="TemuKampus"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

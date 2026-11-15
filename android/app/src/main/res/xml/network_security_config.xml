@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Host pengembangan boleh memakai HTTP biasa; sisanya wajib HTTPS.
+
+  10.0.2.2      = localhost laptop dilihat dari emulator Android
+  temukampus.test = virtual host Laragon di laptop
+  192.168.x.x   = HP fisik yang terhubung ke Wi-Fi yang sama
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">temukampus.test</domain>
+        <domain includeSubdomains="true">192.168.100.221</domain>
+    </domain-config>
+</network-security-config>
