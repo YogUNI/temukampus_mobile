@@ -361,6 +361,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     await _handleAvatarPick(ImageSource.gallery);
                   },
                 ),
+                // Hapus foto hanya relevan bila pengguna sudah punya foto.
+                if (ref.read(authNotifierProvider).user?.avatarUrl != null)
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                    title: Text(
+                      'Hapus Foto Profil',
+                      style: AppTypography.titleSmall.copyWith(color: AppColors.danger),
+                    ),
+                    onTap: () async {
+                      final messenger = ScaffoldMessenger.of(ctx);
+                      Navigator.pop(ctx);
+
+                      final error =
+                          await ref.read(authNotifierProvider.notifier).removeAvatar();
+                      if (!mounted) return;
+
+                      if (error == null) {
+                        AppHaptics.success();
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Foto profil dihapus.'),
+                            backgroundColor: AppColors.mint,
+                          ),
+                        );
+                      } else {
+                        AppHaptics.error();
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(error), backgroundColor: AppColors.danger),
+                        );
+                      }
+                    },
+                  ),
               ],
             ),
           ),
