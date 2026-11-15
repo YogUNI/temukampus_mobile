@@ -298,12 +298,16 @@ class _NotificationCard extends StatelessWidget {
                         ),
                         if (item.actionLabel != null) ...[
                           const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            '· ${item.actionLabel}',
-                            style: AppTypography.labelSmall.copyWith(
-                              fontSize: 11,
-                              color: AppColors.cobalt,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              '· ${item.actionLabel}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.labelSmall.copyWith(
+                                fontSize: 11,
+                                color: AppColors.cobalt,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],

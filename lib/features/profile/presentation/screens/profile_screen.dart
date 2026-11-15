@@ -7,7 +7,9 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
 import '../../../../app/theme/components/ticket_clipper.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../notifications/presentation/providers/notification_permission_provider.dart';
 import '../../../../core/utils/image_compressor.dart';
 import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
@@ -602,6 +604,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+    final permission = ref.watch(notificationPermissionProvider);
     final user = authState.user;
 
     // Tampilan Mode Tamu (Guest Mode)
@@ -993,6 +996,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     title: Text('Ubah Kata Sandi', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
                     trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink400),
                     onTap: _showChangePasswordSheet,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.notifications_active_rounded, color: AppColors.cobalt),
+                    title: Text('Notifikasi', style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                    subtitle: Text(
+                      permission.granted
+                          ? 'Aktif — kabar tiket & acara muncul di layar HP'
+                          : 'Nonaktif — aktifkan agar tidak ketinggalan kabar',
+                      style: AppTypography.bodySmall.copyWith(
+                        fontSize: 11.5,
+                        color: AppColors.ink500,
+                      ),
+                    ),
+                    trailing: Switch.adaptive(
+                      value: permission.granted,
+                      activeColor: AppColors.cobalt,
+                      onChanged: (value) async {
+                        final messenger = ScaffoldMessenger.of(context);
+
+                        if (value) {
+                          final granted =
+                              await ref.read(notificationPermissionProvider.notifier).request();
+                          if (!mounted) return;
+                          AppHaptics.light();
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                granted
+                                    ? 'Notifikasi aktif.'
+                                    : 'Izin ditolak sistem. Aktifkan lewat Pengaturan HP → Aplikasi → TemuKampus.',
+                              ),
+                              backgroundColor: granted ? AppColors.mint : AppColors.danger,
+                            ),
+                          );
+                        } else {
+                          // Menonaktifkan dari sisi aplikasi: berhenti menampilkan
+                          // notifikasi sistem tanpa mencabut izin OS.
+                          await NotificationService.instance.rememberDeclined();
+                          await ref.read(notificationPermissionProvider.notifier).decline();
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Notifikasi dinonaktifkan.')),
+                          );
+                        }
+                      },
+                    ),
                   ),
                   const Divider(height: 1),
                   ListTile(

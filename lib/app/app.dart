@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/session_expiry.dart';
 import '../features/auth/presentation/controllers/auth_notifier.dart';
+import '../features/notifications/presentation/providers/notification_watcher.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -20,6 +21,8 @@ class TemuKampusApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sessionBridgeProvider);
+    // Pengawas notifikasi: memeriksa kabar baru & menampilkannya di status bar.
+    ref.watch(notificationWatcherProvider);
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(

@@ -22,6 +22,7 @@ import '../widgets/filter_chip_bar.dart';
 import '../widgets/home_header.dart';
 import '../widgets/home_quick_filters.dart';
 import '../../../notifications/presentation/providers/notifications_badge_provider.dart';
+import '../../../notifications/presentation/widgets/notification_permission_prompt.dart';
 
 /// Beranda TemuKampus.
 ///
@@ -53,6 +54,8 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Memicu dialog izin notifikasi sekali setelah pengguna masuk.
+                if (user != null) const NotificationPermissionPrompt(),
                 HomeHeader(
                   user: user,
                   unreadCount: ref.watch(unreadNotificationsProvider).valueOrNull ?? 0,
