@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/push_service.dart';
 
 /// Status izin notifikasi sistem.
 ///
@@ -45,8 +46,22 @@ class NotificationPermissionNotifier extends StateNotifier<NotificationPermissio
   }
 
   /// Tampilkan dialog izin sistem (Android 13+ / iOS).
+  ///
+  /// FCM meminta izin yang sama dengan notifikasi lokal; bila Firebase belum
+  /// aktif (mis. web/desktop), fallback ke `NotificationService`.
   Future<bool> request() async {
-    final granted = await NotificationService.instance.requestPermission();
+    bool granted = false;
+
+    if (PushService.instance.isReady) {
+      granted = await PushService.instance.requestPermission();
+      if (granted) {
+        await NotificationService.instance.markGranted();
+      }
+    }
+
+    if (!granted) {
+      granted = await NotificationService.instance.requestPermission();
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_askedKey, true);

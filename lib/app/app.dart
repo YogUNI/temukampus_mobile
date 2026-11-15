@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/session_expiry.dart';
 import '../features/auth/presentation/controllers/auth_notifier.dart';
+import '../core/services/push_service.dart';
+import '../features/notifications/data/datasources/push_registrar.dart';
 import '../features/notifications/presentation/providers/notification_watcher.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
@@ -23,7 +25,12 @@ class TemuKampusApp extends ConsumerWidget {
     ref.watch(sessionBridgeProvider);
     // Pengawas notifikasi: memeriksa kabar baru & menampilkannya di status bar.
     ref.watch(notificationWatcherProvider);
+    // Daftarkan token perangkat untuk push (FCM) setiap kali login.
+    ref.watch(pushSyncProvider);
     final router = ref.watch(routerProvider);
+
+    // Mengetuk notifikasi membuka layar tujuan (mis. /tickets/TK-XXXX).
+    PushService.instance.onNotificationTap((route) => router.go(route));
 
     return MaterialApp.router(
       title: 'TemuKampus Mobile',

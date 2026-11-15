@@ -116,6 +116,12 @@ class NotificationService {
     return granted;
   }
 
+  /// Tandai izin sudah diberikan (dipakai saat FCM yang meminta izin).
+  Future<void> markGranted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_permissionKey, true);
+  }
+
   /// Simpan pilihan pengguna tanpa membuka dialog sistem (mis. tombol "Nanti").
   Future<void> rememberDeclined() async {
     final prefs = await SharedPreferences.getInstance();

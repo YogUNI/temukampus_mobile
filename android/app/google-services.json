@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "533774399470",
+    "project_id": "temukampus-db",
+    "storage_bucket": "temukampus-db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533774399470:android:b255014f944ef4679bc0ff",
+        "android_client_info": {
+          "package_name": "id.ac.mercubuana.temukampus.temukampus_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtzxxMFKvbtQsSzmYKJ5XcpfD3BlVyh9c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
