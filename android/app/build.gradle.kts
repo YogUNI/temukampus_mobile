@@ -9,7 +9,8 @@ plugins {
 
 android {
     namespace = "id.ac.mercubuana.temukampus.temukampus_mobile"
-    compileSdk = flutter.compileSdkVersion
+    // mobile_scanner 7.x (MLKit 16 KB-aligned) mewajibkan compileSdk 36.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
