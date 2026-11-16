@@ -117,8 +117,7 @@ class RegisterNimPreview extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
-                _Chip(label: 'Kode: ${result.programCode}'),
-                _Chip(label: 'Angkatan: ${result.cohortYear}'),
+                _Chip(label: 'Angkatan ${result.cohortYear}'),
               ],
             ),
           ],
@@ -155,14 +154,16 @@ class RegisterNimPreview extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
+          // Hanya prodi, fakultas, dan angkatan yang ditampilkan. Kode prodi
+          // (3 digit pertama NIM) adalah urusan internal backend, bukan informasi
+          // yang berguna bagi pendaftar.
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: [
-              _Chip(label: 'Kode: ${result.programCode}'),
-              _Chip(label: 'Angkatan: ${result.cohortYear}'),
               if (result.facultyName != null)
                 _Chip(label: result.facultyName!),
+              _Chip(label: 'Angkatan ${result.cohortYear}'),
             ],
           ),
         ],

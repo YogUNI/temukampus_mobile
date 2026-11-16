@@ -130,7 +130,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Teknik Informatika'), findsOneWidget);
-      expect(find.text('Angkatan: 2024'), findsOneWidget);
+      expect(find.text('Angkatan 2024'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -149,7 +149,7 @@ void main() {
       // Regresi: 411 = Teknik Sipil menurut database, bukan Teknik Arsitektur.
       expect(find.text('Teknik Sipil'), findsOneWidget);
       expect(find.text('Fakultas Teknik'), findsOneWidget);
-      expect(find.text('Angkatan: 2024'), findsOneWidget);
+      expect(find.text('Angkatan 2024'), findsOneWidget);
     });
 
     testWidgets('kode prodi tak dikenal memunculkan peringatan, bukan blokir',
@@ -165,8 +165,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('belum terdaftar'), findsOneWidget);
-      expect(find.text('Kode: 999'), findsOneWidget);
-      expect(find.text('Angkatan: 2024'), findsOneWidget);
+      // Kode prodi adalah urusan internal backend, tidak ditampilkan ke pendaftar.
+      expect(find.textContaining('Kode:'), findsNothing);
+      expect(find.text('Angkatan 2024'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
