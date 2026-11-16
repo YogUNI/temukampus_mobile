@@ -35,6 +35,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final confirmed = await showLogoutSheet(
       context,
       name: user?.name,
+      avatarUrl: user?.avatarUrl,
       subtitle: user?.nim != null
           ? 'NIM ${user!.nim} akan keluar dari perangkat ini. Tiket dan riwayatmu tetap tersimpan.'
           : null,

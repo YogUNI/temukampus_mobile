@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/app_network_or_asset_image.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radii.dart';
 import '../../../../app/theme/app_shadows.dart';
@@ -15,13 +16,18 @@ Future<bool> showLogoutSheet(
   BuildContext context, {
   String? name,
   String? subtitle,
+  String? avatarUrl,
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: AppColors.ink.withValues(alpha: 0.42),
-    builder: (ctx) => _LogoutSheet(name: name, subtitle: subtitle),
+    builder: (ctx) => _LogoutSheet(
+      name: name,
+      subtitle: subtitle,
+      avatarUrl: avatarUrl,
+    ),
   );
 
   return result ?? false;
@@ -30,8 +36,9 @@ Future<bool> showLogoutSheet(
 class _LogoutSheet extends StatelessWidget {
   final String? name;
   final String? subtitle;
+  final String? avatarUrl;
 
-  const _LogoutSheet({this.name, this.subtitle});
+  const _LogoutSheet({this.name, this.subtitle, this.avatarUrl});
 
   String get _initials {
     final source = (name ?? '').trim();
@@ -83,7 +90,7 @@ class _LogoutSheet extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Avatar inisial dengan cincin cobalt.
+                  // Foto profil asli bila ada; inisial sebagai cadangan.
                   Container(
                     width: 62,
                     height: 62,
@@ -92,12 +99,21 @@ class _LogoutSheet extends StatelessWidget {
                       color: AppColors.cobaltLight,
                       border: Border.all(color: AppColors.cobalt, width: 2),
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _initials,
-                      style: AppTypography.titleMedium.copyWith(
-                        color: AppColors.cobalt,
-                        fontWeight: FontWeight.w800,
+                    child: ClipOval(
+                      child: AppNetworkOrAssetImage(
+                        imagePath: avatarUrl,
+                        width: 62,
+                        height: 62,
+                        fit: BoxFit.cover,
+                        errorWidget: Center(
+                          child: Text(
+                            _initials,
+                            style: AppTypography.titleMedium.copyWith(
+                              color: AppColors.cobalt,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
