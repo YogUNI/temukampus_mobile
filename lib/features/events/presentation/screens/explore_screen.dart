@@ -235,6 +235,63 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             ),
           ),
 
+          // 1b. Pintu masuk direktori organisasi kampus.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.gutter,
+              AppSpacing.xs,
+              AppSpacing.gutter,
+              AppSpacing.sm,
+            ),
+            child: GestureDetector(
+              onTap: () {
+                AppHaptics.selection();
+                context.push(AppRoutes.organizations);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.cobaltLight,
+                  borderRadius: AppRadii.borderLg,
+                  border: Border.all(color: AppColors.cobalt, width: 1.2),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.cobalt,
+                        borderRadius: AppRadii.borderSm,
+                      ),
+                      child: const Icon(Icons.groups_rounded,
+                          color: AppColors.surface, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Organisasi Kampus',
+                              style: AppTypography.label.copyWith(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w800,
+                              )),
+                          Text('BEM, himpunan, UKM, dan UKK di satu tempat',
+                              style: AppTypography.micro.copyWith(
+                                color: AppColors.ink500,
+                              )),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.cobalt),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
           // 2. Kategori Horizontal Selector
           if (categoryNames.isNotEmpty) ...[
             FilterChipBar(

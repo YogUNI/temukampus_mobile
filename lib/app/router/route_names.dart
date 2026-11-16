@@ -16,6 +16,11 @@ class AppRoutes {
   static String eventDetailPath(String slug) => '/events/$slug';
   static String eventRegisterPath(String slug) => '/events/$slug/register';
 
+  // Direktori organisasi kampus (padanan /organisasi di web).
+  static const String organizations = '/organisasi';
+  static const String organizationDetail = '/organisasi/:slug';
+  static String organizationDetailPath(String slug) => '/organisasi/$slug';
+
   static const String myTickets = '/my-tickets';
   static const String ticketDetail = '/tickets/:code';
   static String ticketDetailPath(String code) => '/tickets/$code';

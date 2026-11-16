@@ -21,6 +21,10 @@ class ApiEndpoints {
   static String eventEligibility(String slug) => '/events/$slug/eligibility';
   static const String categories = '/categories';
 
+  /// Direktori organisasi kampus (padanan halaman /organisasi di web).
+  static const String organizations = '/organizations';
+  static String organizationDetail(String slug) => '/organizations/$slug';
+
   // === Pendaftaran & Pembayaran ===
   static String registerEvent(String slug) => '/events/$slug/register';
   static String uploadProof(int registrationId) => '/registrations/$registrationId/proof';

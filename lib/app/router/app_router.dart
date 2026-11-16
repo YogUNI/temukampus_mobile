@@ -16,6 +16,8 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/registration/presentation/screens/registration_screen.dart';
 import '../../features/scanner/presentation/screens/event_gate_selector_screen.dart';
+import '../../features/organizations/presentation/screens/organization_detail_screen.dart';
+import '../../features/organizations/presentation/screens/organizations_screen.dart';
 import '../../features/scanner/presentation/screens/scanner_screen.dart';
 import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
 import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
@@ -251,6 +253,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           state: state,
           child: const VerifyEmailScreen(),
         ),
+      ),
+      // Direktori organisasi kampus (padanan /organisasi di web).
+      GoRoute(
+        path: AppRoutes.organizations,
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const OrganizationsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.organizationDetail,
+        pageBuilder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return _buildSlideTransition(
+            state: state,
+            child: OrganizationDetailScreen(slug: slug),
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.eventDetail,

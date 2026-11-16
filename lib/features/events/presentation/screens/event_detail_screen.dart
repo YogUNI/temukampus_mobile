@@ -531,13 +531,32 @@ class _OrganizerRow extends StatelessWidget {
                   fontSize: 9.5,
                 ),
               ),
-              Text(
-                event.organization.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.titleSmall.copyWith(
-                  fontSize: 13.5,
-                  color: AppColors.cobalt,
+              // Nama penyelenggara membuka profil organisasi (padanan web).
+              GestureDetector(
+                onTap: () {
+                  AppHaptics.selection();
+                  context.push(
+                    AppRoutes.organizationDetailPath(event.organization.slug),
+                  );
+                },
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        event.organization.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.titleSmall.copyWith(
+                          fontSize: 13.5,
+                          color: AppColors.cobalt,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.cobalt,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 16, color: AppColors.cobalt),
+                  ],
                 ),
               ),
             ],

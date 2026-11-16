@@ -208,18 +208,24 @@ class _PosterLayer extends StatelessWidget {
               ),
               if (event.skpPoints > 0) ...[
                 const SizedBox(width: AppSpacing.xs),
-                _ImageTag(
-                  label: '${event.skpPoints} SKP',
-                  background: AppColors.cobalt,
-                  foreground: Colors.white,
+                // Flexible: pada kartu sempit (mis. di profil organisasi)
+                // dua badge bisa bertumpuk bila lebarnya dipaksa.
+                Flexible(
+                  child: _ImageTag(
+                    label: '${event.skpPoints} SKP',
+                    background: AppColors.cobalt,
+                    foreground: Colors.white,
+                  ),
                 ),
               ],
               const Spacer(),
               if (isLowQuota)
-                _ImageTag(
-                  label: 'Sisa ${event.remainingQuota}',
-                  background: AppColors.signal,
-                  foreground: AppColors.ink,
+                Flexible(
+                  child: _ImageTag(
+                    label: 'Sisa ${event.remainingQuota}',
+                    background: AppColors.signal,
+                    foreground: AppColors.ink,
+                  ),
                 ),
             ],
           ),
