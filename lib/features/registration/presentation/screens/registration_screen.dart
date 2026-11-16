@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../shared/widgets/animated_check_badge.dart';
 import '../../../../app/theme/app_radii.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
@@ -270,18 +271,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.mintLight,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.mint, width: 2),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.check_rounded, color: AppColors.mintText, size: 44),
-                  ),
-                ),
+                // Centang tergambar bertahap + konfeti: momen sukses yang
+                // benar-benar terasa, bukan ikon statis.
+                const AnimatedCheckBadge(size: 72),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Pendaftaran Berhasil Dikirim!',

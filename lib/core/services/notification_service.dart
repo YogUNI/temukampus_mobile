@@ -45,7 +45,9 @@ class NotificationService {
   }
 
   Future<void> _initInternal() async {
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Ikon kecil notifikasi memakai siluet tiket TemuKampus (drawable putih
+    // transparan) — bukan ikon launcher Flutter bawaan.
+    const androidInit = AndroidInitializationSettings('@drawable/ic_notification');
     const iosInit = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,

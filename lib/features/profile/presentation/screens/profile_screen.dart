@@ -10,8 +10,12 @@ import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../notifications/presentation/providers/notification_permission_provider.dart';
+import 'dart:typed_data';
+
+
 import '../../../../core/utils/image_compressor.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
+import '../screens/avatar_crop_screen.dart';
 import '../widgets/logout_sheet.dart';
 import '../widgets/profile_hero_card.dart';
 
@@ -54,12 +58,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  /// Ambil/unggah foto profil ke `POST /profile/avatar`.
+  /// Ambil foto → atur (crop/zoom) → unggah ke `POST /profile/avatar`.
   Future<void> _handleAvatarPick(ImageSource source) async {
     final data = await AppImageHelper.pickImage(source);
-    if (data == null) return;
 
-    final error = await ref.read(authNotifierProvider.notifier).updateAvatar(data);
+    if (!mounted) return;
+
+    // Jangan diam saja: dulu tombol ini terasa mati karena batal/gagal
+    // tidak memberi pesan apa pun.
+    if (data == null) {
+      _showSnack(
+        context,
+        'Tidak ada foto yang dipilih. Coba lagi ya.',
+        isError: true,
+      );
+      return;
+    }
+
+    final cropped = await Navigator.of(context).push<Uint8List>(
+      MaterialPageRoute(
+        builder: (_) => AvatarCropScreen(bytes: data.bytes),
+        fullscreenDialog: true,
+      ),
+    );
+
+    if (!mounted || cropped == null) return;
+
+    final croppedData = PickedImageData(
+      file: XFile.fromData(
+        cropped,
+        name: 'avatar.png',
+        mimeType: 'image/png',
+      ),
+      bytes: cropped,
+      sizeInBytes: cropped.lengthInBytes,
+      fileName: 'avatar.png',
+    );
+
+    final error = await ref
+        .read(authNotifierProvider.notifier)
+        .updateAvatar(croppedData);
     if (!mounted) return;
 
     if (error == null) {

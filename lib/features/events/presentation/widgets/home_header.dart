@@ -13,6 +13,9 @@ class HomeHeader extends StatelessWidget {
   final UserModel? user;
   final VoidCallback onNotificationTap;
 
+  /// Mengetuk avatar membuka halaman Profil.
+  final VoidCallback? onAvatarTap;
+
   /// Jumlah notifikasi belum dibaca; 0 menyembunyikan badge.
   final int unreadCount;
 
@@ -20,6 +23,7 @@ class HomeHeader extends StatelessWidget {
     super.key,
     required this.user,
     required this.onNotificationTap,
+    this.onAvatarTap,
     this.unreadCount = 0,
   });
 
@@ -27,30 +31,44 @@ class HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.cobalt, width: 1.5),
-            boxShadow: AppShadows.softCard,
-          ),
-          child: ClipOval(
-            child: user != null
-                ? const AppNetworkOrAssetImage(
-                    imagePath: 'assets/images/avatars/user_avatar.jpg',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    color: AppColors.cobaltLight,
-                    child: const Icon(
-                      Icons.person_rounded,
-                      color: AppColors.cobalt,
-                      size: 26,
-                    ),
-                  ),
+        // Avatar = pintu masuk ke Profil, dan menampilkan foto asli user
+        // (sebelumnya selalu memakai gambar statis).
+        Semantics(
+          button: true,
+          label: 'Buka profil',
+          child: GestureDetector(
+            onTap: () {
+              AppHaptics.selection();
+              onAvatarTap?.call();
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.cobalt, width: 1.5),
+                boxShadow: AppShadows.softCard,
+              ),
+              child: ClipOval(
+                child: user != null
+                    ? AppNetworkOrAssetImage(
+                        imagePath: user!.avatarUrl,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorWidget: _InitialsAvatar(name: user!.name),
+                      )
+                    : Container(
+                        color: AppColors.cobaltLight,
+                        child: const Icon(
+                          Icons.person_rounded,
+                          color: AppColors.cobalt,
+                          size: 26,
+                        ),
+                      ),
+              ),
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.md),
@@ -133,6 +151,41 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Inisial nama pada lingkaran cobalt muda — pengganti foto profil.
+class _InitialsAvatar extends StatelessWidget {
+  final String name;
+
+  const _InitialsAvatar({required this.name});
+
+  String get _initials {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return 'TK';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.cobaltLight,
+      alignment: Alignment.center,
+      child: Text(
+        _initials,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.cobalt,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }

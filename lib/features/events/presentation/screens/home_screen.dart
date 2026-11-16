@@ -58,6 +58,8 @@ class HomeScreen extends ConsumerWidget {
                 if (user != null) const NotificationPermissionPrompt(),
                 HomeHeader(
                   user: user,
+                  // Avatar di kiri atas membuka halaman Profil.
+                  onAvatarTap: () => context.go(AppRoutes.profile),
                   unreadCount: ref.watch(unreadNotificationsProvider).valueOrNull ?? 0,
                   onNotificationTap: () async {
                     await context.push(AppRoutes.notifications);

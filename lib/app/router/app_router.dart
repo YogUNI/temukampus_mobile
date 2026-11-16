@@ -54,6 +54,36 @@ CustomTransitionPage<void> _buildSlideTransition({
 /// Transisi "bloom": fade + skala halus dengan veil putih. Dipakai untuk rute
 /// pertama setelah splash (onboarding/login) agar perpindahan terasa menyatu
 /// dengan flash putih di akhir splash — bukan menggeser halaman.
+/// Transisi masuk Beranda setelah login berhasil: halaman baru tumbuh
+/// sedikit (0.985 → 1) sambil memudar masuk, sehingga perpindahan dari
+/// kartu konfirmasi login terasa seperti satu gerakan, bukan potongan.
+CustomTransitionPage<void> _buildHomeRevealTransition({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 420),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.985, end: 1).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 CustomTransitionPage<void> _buildFadeScaleTransition({
   required GoRouterState state,
   required Widget child,
@@ -277,7 +307,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            builder: (context, state) => const HomeScreen(),
+            pageBuilder: (context, state) => _buildHomeRevealTransition(
+              state: state,
+              child: const HomeScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.explore,
