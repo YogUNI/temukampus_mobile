@@ -1,3 +1,5 @@
+import '../../../../core/network/media_url.dart';
+
 /// Model data Program Studi UMB.
 class StudyProgramModel {
   final int? id;
@@ -128,7 +130,9 @@ class UserModel {
       accountType: json['account_type'] as String? ?? 'umb',
       nim: json['nim'] as String?,
       phone: json['phone'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
+      // URL dari backend memakai host web (temukampus.test); selaraskan ke
+      // origin API agar foto benar-benar termuat di perangkat.
+      avatarUrl: MediaUrl.resolve(json['avatar_url'] as String?),
       institutionName: json['institution_name'] as String?,
       studyProgram: json['study_program'] != null
           ? StudyProgramModel.fromJson(json['study_program'] as Map<String, dynamic>)

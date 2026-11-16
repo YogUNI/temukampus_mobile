@@ -1,3 +1,5 @@
+import '../../../../core/network/media_url.dart';
+
 import '../../../auth/data/models/user_model.dart';
 
 /// Model Pembatasan Target Peserta Acara (BR-04).
@@ -442,7 +444,8 @@ class EventModel {
       slug: json['slug'] as String? ?? '',
       summary: json['summary'] as String? ?? '',
       description: json['description'] as String? ?? (json['summary'] as String? ?? ''),
-      posterUrl: json['poster_url'] as String?,
+      // Backend mengirim URL absolut ber-host web; tempelkan ke origin API.
+      posterUrl: MediaUrl.resolve(json['poster_url'] as String?),
       format: json['format'] as String? ?? 'offline',
       startAt: json['start_at'] != null
           ? DateTime.parse(json['start_at'] as String)

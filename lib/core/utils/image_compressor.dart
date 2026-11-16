@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants/app_constants.dart';
 
@@ -60,6 +61,29 @@ class AppImageHelper {
     } catch (e) {
       debugPrint('[AppImageHelper] Gagal mengambil gambar: $e');
       return null;
+    }
+  }
+
+  /// Menegakkan orientasi foto sesuai EXIF lalu menulis ulang byte-nya.
+  ///
+  /// Foto kamera tersimpan miring + metadata rotasi; bila byte asli dipakai,
+  /// ukuran dari codec (landscape) berbeda dengan hasil render (portrait)
+  /// sehingga foto tampak gepeng. Normalisasi di sini membuat keduanya sama.
+  static Future<Uint8List> normalizeOrientation(Uint8List bytes) async {
+    try {
+      final result = await FlutterImageCompress.compressWithList(
+        bytes,
+        minWidth: 2048,
+        minHeight: 2048,
+        quality: 92,
+        autoCorrectionAngle: true,
+        keepExif: false,
+      );
+
+      return result.isEmpty ? bytes : result;
+    } catch (e) {
+      debugPrint('[AppImageHelper] Normalisasi orientasi dilewati: $e');
+      return bytes;
     }
   }
 }

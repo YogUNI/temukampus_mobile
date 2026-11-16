@@ -179,7 +179,7 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                                             _coverScale(size),
                                         child: Image.memory(
                                           widget.bytes,
-                                          fit: BoxFit.fill,
+                                          fit: BoxFit.cover,
                                           gaplessPlayback: true,
                                         ),
                                       ),

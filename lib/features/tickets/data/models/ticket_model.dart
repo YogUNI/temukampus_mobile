@@ -1,3 +1,5 @@
+import '../../../../core/network/media_url.dart';
+
 /// Model Informasi Peserta Tiket
 class TicketParticipantModel {
   final String name;
@@ -51,7 +53,8 @@ class TicketEventModel {
     return TicketEventModel(
       title: json['title'] as String? ?? '',
       slug: json['slug'] as String? ?? '',
-      posterUrl: json['poster_url'] as String?,
+      // Backend mengirim URL absolut ber-host web; tempelkan ke origin API.
+      posterUrl: MediaUrl.resolve(json['poster_url'] as String?),
       startAt: json['start_at'] != null
           ? DateTime.parse(json['start_at'] as String)
           : DateTime.now(),

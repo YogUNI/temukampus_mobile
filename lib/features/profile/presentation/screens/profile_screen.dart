@@ -75,9 +75,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return;
     }
 
+    // Tegakkan orientasi dulu supaya bingkai crop & hasilnya tidak gepeng.
+    final upright = await AppImageHelper.normalizeOrientation(data.bytes);
+
+    if (!mounted) return;
+
     final cropped = await Navigator.of(context).push<Uint8List>(
       MaterialPageRoute(
-        builder: (_) => AvatarCropScreen(bytes: data.bytes),
+        builder: (_) => AvatarCropScreen(bytes: upright),
         fullscreenDialog: true,
       ),
     );
