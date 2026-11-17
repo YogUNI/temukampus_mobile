@@ -18,6 +18,8 @@ import '../../features/registration/presentation/screens/registration_screen.dar
 import '../../features/scanner/presentation/screens/event_gate_selector_screen.dart';
 import '../../features/organizations/presentation/screens/organization_detail_screen.dart';
 import '../../features/organizations/presentation/screens/organizations_screen.dart';
+import '../../features/panitia/presentation/screens/panitia_home_screen.dart';
+import '../../features/panitia/presentation/screens/panitia_registrants_screen.dart';
 import '../../features/scanner/presentation/screens/scanner_screen.dart';
 import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
 import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
@@ -253,6 +255,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           state: state,
           child: const VerifyEmailScreen(),
         ),
+      ),
+      // Panel panitia (padanan /panitia di web).
+      GoRoute(
+        path: AppRoutes.panitia,
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const PanitiaHomeScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.panitiaRegistrants,
+        pageBuilder: (context, state) {
+          final eventId = int.tryParse(state.pathParameters['eventId'] ?? '') ?? 0;
+          return _buildSlideTransition(
+            state: state,
+            child: PanitiaRegistrantsScreen(eventId: eventId),
+          );
+        },
       ),
       // Direktori organisasi kampus (padanan /organisasi di web).
       GoRoute(

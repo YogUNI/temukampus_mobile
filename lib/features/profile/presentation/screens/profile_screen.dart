@@ -766,7 +766,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               GestureDetector(
                 onTap: () {
                   AppHaptics.selection();
-                  context.push(AppRoutes.scannerSelectEvent);
+                  // Banner membuka panel panitia (dashboard + verifikasi +
+                  // peserta + scan), bukan langsung ke scanner.
+                  context.push(AppRoutes.panitia);
                 },
                 child: TicketContainer(
                   punchRadius: 12.0,

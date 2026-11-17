@@ -25,6 +25,22 @@ class ApiEndpoints {
   static const String organizations = '/organizations';
   static String organizationDetail(String slug) => '/organizations/$slug';
 
+  // === Panel panitia ===
+  static const String panitiaDashboard = '/panitia/dashboard';
+  static String panitiaRegistrations(int eventId) =>
+      '/panitia/events/$eventId/registrations';
+  static String panitiaProof(int registrationId) =>
+      '/panitia/registrations/$registrationId/proof';
+  static String panitiaApprove(int id) => '/panitia/registrations/$id/approve';
+  static String panitiaRevise(int id) => '/panitia/registrations/$id/revise';
+  static String panitiaReject(int id) => '/panitia/registrations/$id/reject';
+  static String panitiaCheckIn(int id) => '/panitia/registrations/$id/check-in';
+  static String panitiaBulkApprove(int eventId) =>
+      '/panitia/events/$eventId/registrations/bulk-approve';
+  static String panitiaPublish(int eventId) => '/panitia/events/$eventId/publish';
+  static String panitiaUnpublish(int eventId) => '/panitia/events/$eventId/unpublish';
+  static String panitiaCancel(int eventId) => '/panitia/events/$eventId/cancel';
+
   // === Pendaftaran & Pembayaran ===
   static String registerEvent(String slug) => '/events/$slug/register';
   static String uploadProof(int registrationId) => '/registrations/$registrationId/proof';
