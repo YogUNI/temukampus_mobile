@@ -129,6 +129,22 @@ class RegistrantsController extends StateNotifier<RegistrantsState> {
 
     return message;
   }
+
+  /// Menyetujui beberapa pendaftaran sekaligus (Fase 9 / F-25 bulk approve).
+  Future<String> bulkApprove(List<int> registrationIds) async {
+    final message = await _dataSource.bulkApprove(eventId, registrationIds);
+    await load(silent: true);
+
+    return message;
+  }
+
+  /// Publikasikan, kembalikan ke draf, atau batalkan acara.
+  Future<String> eventAction(String action, {String? reason}) async {
+    final message = await _dataSource.eventAction(eventId, action, reason: reason);
+    await load(silent: true);
+
+    return message;
+  }
 }
 
 final registrantsControllerProvider = StateNotifierProvider.autoDispose
