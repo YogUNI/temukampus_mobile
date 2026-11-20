@@ -19,6 +19,8 @@ class MockPanitiaDataSource extends PanitiaRemoteDataSource {
   String? lastAction;
   String? lastReason;
   int? lastActionEventId;
+  int? lastExportEventId;
+  bool? lastExportIsPdf;
 
   @override
   Future<PanitiaDashboardModel> dashboard() async {
@@ -94,6 +96,13 @@ class MockPanitiaDataSource extends PanitiaRemoteDataSource {
       'cancel' => 'Acara dibatalkan dan peserta dikabari.',
       _ => 'Berhasil.',
     };
+  }
+
+  @override
+  Future<List<int>> downloadExportBytes(int eventId, {required bool isPdf}) async {
+    lastExportEventId = eventId;
+    lastExportIsPdf = isPdf;
+    return const [1, 2, 3, 4];
   }
 }
 
@@ -272,6 +281,36 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(submittedText, 'Alasan pembatalan resmi acara kampus');
+    });
+
+    testWidgets('PopupMenuButton menampilkan opsi Ekspor CSV dan Lembar Hadir PDF', (tester) async {
+      final mockPanitia = MockPanitiaDataSource();
+      final mockScanner = MockScannerDataSource();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            panitiaRemoteDataSourceProvider.overrideWithValue(mockPanitia),
+            scannerRemoteDataSourceProvider.overrideWithValue(mockScanner),
+          ],
+          child: const MaterialApp(
+            home: PanitiaRegistrantsScreen(eventId: 1),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap menu titik tiga di AppBar
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+
+      // Pastikan opsi Ekspor Peserta (CSV) dan Unduh Lembar Hadir (PDF) muncul
+      expect(find.text('Ekspor Peserta (CSV)'), findsOneWidget);
+      expect(find.text('Unduh Lembar Hadir (PDF)'), findsOneWidget);
+      expect(find.text('Publikasikan Acara'), findsOneWidget);
+      expect(find.text('Kembalikan ke Draf'), findsOneWidget);
+      expect(find.text('Batalkan Acara'), findsOneWidget);
     });
   });
 }

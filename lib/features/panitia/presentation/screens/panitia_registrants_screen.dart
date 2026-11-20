@@ -202,6 +202,31 @@ class _PanitiaRegistrantsScreenState
     AppHaptics.selection();
     final eventTitle = event?.title ?? 'acara ini';
 
+    if (action == 'export_csv' || action == 'export_sheet') {
+      final isPdf = action == 'export_sheet';
+      setState(() => _isEventActionBusy = true);
+      final controller =
+          ref.read(registrantsControllerProvider(widget.eventId).notifier);
+
+      try {
+        final message = await controller.exportFile(
+          isPdf: isPdf,
+          eventSlug: event?.slug,
+        );
+        if (!mounted) return;
+
+        AppHaptics.success();
+        _snack(message);
+      } catch (e) {
+        if (!mounted) return;
+        AppHaptics.error();
+        _snack(_clean(e), isError: true);
+      } finally {
+        if (mounted) setState(() => _isEventActionBusy = false);
+      }
+      return;
+    }
+
     if (action == 'publish') {
       final ok = await showDialog<bool>(
         context: context,
@@ -335,13 +360,45 @@ class _PanitiaRegistrantsScreenState
             onSelected: (action) => _handleEventAction(action, currentEvent),
             itemBuilder: (context) => [
               PopupMenuItem<String>(
+                value: 'export_csv',
+                child: Row(
+                  children: [
+                    const Icon(Icons.table_chart_rounded,
+                        size: 18, color: AppColors.cobalt),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('Ekspor Peserta (CSV)',
+                          style: AppTypography.bodySmall),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'export_sheet',
+                child: Row(
+                  children: [
+                    const Icon(Icons.picture_as_pdf_rounded,
+                        size: 18, color: AppColors.signal),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('Unduh Lembar Hadir (PDF)',
+                          style: AppTypography.bodySmall),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem<String>(
                 value: 'publish',
                 child: Row(
                   children: [
                     const Icon(Icons.rocket_launch_rounded,
                         size: 18, color: AppColors.cobalt),
                     const SizedBox(width: 10),
-                    Text('Publikasikan Acara', style: AppTypography.bodySmall),
+                    Expanded(
+                      child: Text('Publikasikan Acara',
+                          style: AppTypography.bodySmall),
+                    ),
                   ],
                 ),
               ),
@@ -352,7 +409,10 @@ class _PanitiaRegistrantsScreenState
                     const Icon(Icons.drafts_rounded,
                         size: 18, color: AppColors.ink500),
                     const SizedBox(width: 10),
-                    Text('Kembalikan ke Draf', style: AppTypography.bodySmall),
+                    Expanded(
+                      child: Text('Kembalikan ke Draf',
+                          style: AppTypography.bodySmall),
+                    ),
                   ],
                 ),
               ),
@@ -364,10 +424,12 @@ class _PanitiaRegistrantsScreenState
                     const Icon(Icons.event_busy_rounded,
                         size: 18, color: AppColors.danger),
                     const SizedBox(width: 10),
-                    Text(
-                      'Batalkan Acara',
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.danger),
+                    Expanded(
+                      child: Text(
+                        'Batalkan Acara',
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.danger),
+                      ),
                     ),
                   ],
                 ),

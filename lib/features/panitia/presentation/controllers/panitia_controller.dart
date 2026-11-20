@@ -1,5 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../../../core/errors/exceptions.dart';
 import '../../../scanner/data/datasources/scanner_remote_datasource.dart';
 import '../../../scanner/data/models/check_in_result_model.dart';
 import '../../data/datasources/panitia_remote_datasource.dart';
@@ -144,6 +150,36 @@ class RegistrantsController extends StateNotifier<RegistrantsState> {
     await load(silent: true);
 
     return message;
+  }
+
+  /// Ekspor peserta ke CSV atau Lembar Presensi ke PDF, simpan sementara & buka share sheet.
+  Future<String> exportFile({required bool isPdf, String? eventSlug}) async {
+    final bytes = await _dataSource.downloadExportBytes(eventId, isPdf: isPdf);
+    if (bytes.isEmpty) {
+      throw const ServerException('Berkas ekspor kosong.');
+    }
+
+    final slug = (eventSlug != null && eventSlug.isNotEmpty) ? eventSlug : 'acara-$eventId';
+    final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final mimeType = isPdf ? 'application/pdf' : 'text/csv';
+    final filename = isPdf
+        ? 'presensi-$slug-$dateStr.pdf'
+        : 'peserta-$slug-$dateStr.csv';
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$filename');
+    await file.writeAsBytes(bytes, flush: true);
+
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: mimeType, name: filename)],
+        subject: isPdf ? 'Lembar Presensi $slug' : 'Daftar Peserta $slug',
+      ),
+    );
+
+    return isPdf
+        ? 'Lembar hadir berhasil diunduh.'
+        : 'Data peserta berhasil diekspor.';
   }
 }
 

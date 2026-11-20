@@ -40,6 +40,9 @@ class ApiEndpoints {
   static String panitiaPublish(int eventId) => '/panitia/events/$eventId/publish';
   static String panitiaUnpublish(int eventId) => '/panitia/events/$eventId/unpublish';
   static String panitiaCancel(int eventId) => '/panitia/events/$eventId/cancel';
+  static String panitiaExportCsv(int eventId) => '/panitia/events/$eventId/export-csv';
+  static String panitiaAttendanceSheet(int eventId) =>
+      '/panitia/events/$eventId/attendance-sheet';
 
   // === Pendaftaran & Pembayaran ===
   static String registerEvent(String slug) => '/events/$slug/register';

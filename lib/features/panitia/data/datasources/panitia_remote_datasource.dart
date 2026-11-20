@@ -110,6 +110,37 @@ class PanitiaRemoteDataSource {
     return response.data?['message'] as String? ?? 'Berhasil.';
   }
 
+  /// Unduh byte berkas ekspor data peserta CSV atau lembar hadir PDF.
+  Future<List<int>> downloadExportBytes(int eventId, {required bool isPdf}) async {
+    final path = isPdf
+        ? ApiEndpoints.panitiaAttendanceSheet(eventId)
+        : ApiEndpoints.panitiaExportCsv(eventId);
+
+    try {
+      final response = await _apiClient.get<List<int>>(
+        path,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return response.data ?? <int>[];
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw const NetworkException('Koneksi internet terputus.');
+      }
+
+      final status = e.response?.statusCode;
+      if (status == 403) {
+        throw const ServerException('Kamu tidak punya akses ke acara ini.', 403);
+      }
+
+      throw const ServerException('Gagal mengunduh berkas ekspor.');
+    }
+  }
+
   Future<Response<Map<String, dynamic>>> _call(
     Future<Response<Map<String, dynamic>>> Function() request,
   ) async {
