@@ -32,6 +32,17 @@ class PanitiaHomeScreen extends ConsumerWidget {
         scrolledUnderElevation: 0,
         title: Text('Panel Panitia', style: AppTypography.titleMedium),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          AppHaptics.selection();
+          context.push(AppRoutes.panitiaEventCreate);
+        },
+        backgroundColor: AppColors.cobalt,
+        foregroundColor: Colors.white,
+        elevation: 3,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Buat Acara'),
+      ),
       body: RefreshIndicator(
         color: AppColors.cobalt,
         onRefresh: () async {
@@ -60,28 +71,52 @@ class PanitiaHomeScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _QuickAction(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'Scan Presensi',
+                    icon: Icons.add_circle_outline_rounded,
+                    label: 'Buat Acara',
                     color: AppColors.cobalt,
                     onTap: () {
                       AppHaptics.selection();
-                      context.push(AppRoutes.scannerSelectEvent);
+                      context.push(AppRoutes.panitiaEventCreate);
                     },
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: _QuickAction(
-                    icon: Icons.verified_rounded,
-                    label: 'Verifikasi',
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Scan Presensi',
                     color: AppColors.signal,
                     onTap: () {
                       AppHaptics.selection();
-                      final list = ref.read(panitiaEventsProvider).valueOrNull ?? [];
-
-                      if (list.isEmpty) return;
-
-                      context.push(AppRoutes.panitiaRegistrantsPath(list.first.id));
+                      context.push(AppRoutes.scannerSelectEvent);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: _QuickAction(
+                    icon: Icons.corporate_fare_rounded,
+                    label: 'Profil Ormawa',
+                    color: AppColors.cobalt,
+                    onTap: () {
+                      AppHaptics.selection();
+                      context.push(AppRoutes.panitiaOrganization);
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: _QuickAction(
+                    icon: Icons.group_outlined,
+                    label: 'Anggota Tim',
+                    color: AppColors.ink,
+                    onTap: () {
+                      AppHaptics.selection();
+                      context.push(AppRoutes.panitiaMembers);
                     },
                   ),
                 ),
@@ -118,6 +153,10 @@ class PanitiaHomeScreen extends ConsumerWidget {
                         onTap: () {
                           AppHaptics.selection();
                           context.push(AppRoutes.panitiaRegistrantsPath(event.id));
+                        },
+                        onEdit: () {
+                          AppHaptics.selection();
+                          context.push(AppRoutes.panitiaEventEditPath(event.id));
                         },
                       ),
                       const SizedBox(height: AppSpacing.sm),
@@ -220,6 +259,7 @@ class _EventTile extends StatelessWidget {
   final int registered;
   final int attended;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
 
   const _EventTile({
     required this.title,
@@ -227,6 +267,7 @@ class _EventTile extends StatelessWidget {
     required this.registered,
     required this.attended,
     required this.onTap,
+    required this.onEdit,
   });
 
   @override
@@ -284,6 +325,12 @@ class _EventTile extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_note_rounded,
+                    color: AppColors.cobalt, size: 22),
+                tooltip: 'Ubah Acara',
+                onPressed: onEdit,
               ),
               const Icon(Icons.chevron_right_rounded, color: AppColors.ink400),
             ],

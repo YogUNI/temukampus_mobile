@@ -21,6 +21,27 @@ final panitiaEventsProvider = FutureProvider.autoDispose<List<GateEventModel>>((
   return ref.watch(scannerRemoteDataSourceProvider).getManagedEvents();
 });
 
+/// Master data kategori, fakultas, prodi untuk wizard acara.
+final panitiaEventsMetaProvider = FutureProvider.autoDispose<PanitiaEventMetaModel>((ref) {
+  return ref.watch(panitiaRemoteDataSourceProvider).getEventsMeta();
+});
+
+/// Detail acara untuk formulir ubah acara.
+final panitiaEventDetailProvider =
+    FutureProvider.autoDispose.family<PanitiaEventDetailModel, int>((ref, eventId) {
+  return ref.watch(panitiaRemoteDataSourceProvider).getEventDetail(eventId);
+});
+
+/// Profil organisasi aktif panitia.
+final panitiaOrganizationProvider = FutureProvider.autoDispose<PanitiaOrganizationModel>((ref) {
+  return ref.watch(panitiaRemoteDataSourceProvider).getOrganization();
+});
+
+/// Daftar staf/anggota organisasi aktif.
+final panitiaMembersProvider = FutureProvider.autoDispose<List<PanitiaMemberModel>>((ref) {
+  return ref.watch(panitiaRemoteDataSourceProvider).getMembers();
+});
+
 /// Tab daftar peserta.
 enum RegistrantTab {
   menunggu('menunggu', 'Menunggu'),

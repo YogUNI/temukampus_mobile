@@ -18,7 +18,10 @@ import '../../features/registration/presentation/screens/registration_screen.dar
 import '../../features/scanner/presentation/screens/event_gate_selector_screen.dart';
 import '../../features/organizations/presentation/screens/organization_detail_screen.dart';
 import '../../features/organizations/presentation/screens/organizations_screen.dart';
+import '../../features/panitia/presentation/screens/panitia_event_wizard_screen.dart';
 import '../../features/panitia/presentation/screens/panitia_home_screen.dart';
+import '../../features/panitia/presentation/screens/panitia_members_screen.dart';
+import '../../features/panitia/presentation/screens/panitia_organization_screen.dart';
 import '../../features/panitia/presentation/screens/panitia_registrants_screen.dart';
 import '../../features/scanner/presentation/screens/scanner_screen.dart';
 import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
@@ -273,6 +276,37 @@ final routerProvider = Provider<GoRouter>((ref) {
             child: PanitiaRegistrantsScreen(eventId: eventId),
           );
         },
+      ),
+      GoRoute(
+        path: AppRoutes.panitiaEventCreate,
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const PanitiaEventWizardScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.panitiaEventEdit,
+        pageBuilder: (context, state) {
+          final eventId = int.tryParse(state.pathParameters['eventId'] ?? '');
+          return _buildSlideTransition(
+            state: state,
+            child: PanitiaEventWizardScreen(eventId: eventId),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.panitiaOrganization,
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const PanitiaOrganizationScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.panitiaMembers,
+        pageBuilder: (context, state) => _buildSlideTransition(
+          state: state,
+          child: const PanitiaMembersScreen(),
+        ),
       ),
       // Direktori organisasi kampus (padanan /organisasi di web).
       GoRoute(

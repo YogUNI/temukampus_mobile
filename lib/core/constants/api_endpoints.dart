@@ -43,6 +43,16 @@ class ApiEndpoints {
   static String panitiaExportCsv(int eventId) => '/panitia/events/$eventId/export-csv';
   static String panitiaAttendanceSheet(int eventId) =>
       '/panitia/events/$eventId/attendance-sheet';
+  static const String panitiaEventsMeta = '/panitia/events/meta';
+  static const String panitiaEventCreate = '/panitia/events';
+  static String panitiaEventDetail(int id) => '/panitia/events/$id';
+  static String panitiaEventUpdate(int id) => '/panitia/events/$id';
+
+  // === Profil Organisasi & Anggota Panitia ===
+  static const String panitiaOrganization = '/panitia/organization';
+  static const String panitiaMembers = '/panitia/organization/members';
+  static String panitiaMemberRemove(int userId) =>
+      '/panitia/organization/members/$userId';
 
   // === Pendaftaran & Pembayaran ===
   static String registerEvent(String slug) => '/events/$slug/register';

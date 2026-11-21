@@ -21,6 +21,12 @@ class AppRoutes {
   static const String panitiaRegistrants = '/panitia/acara/:eventId/peserta';
   static String panitiaRegistrantsPath(int eventId) =>
       '/panitia/acara/$eventId/peserta';
+  static const String panitiaEventCreate = '/panitia/acara/baru';
+  static const String panitiaEventEdit = '/panitia/acara/:eventId/edit';
+  static String panitiaEventEditPath(int eventId) =>
+      '/panitia/acara/$eventId/edit';
+  static const String panitiaOrganization = '/panitia/organisasi';
+  static const String panitiaMembers = '/panitia/organisasi/anggota';
 
   // Direktori organisasi kampus (padanan /organisasi di web).
   static const String organizations = '/organisasi';
