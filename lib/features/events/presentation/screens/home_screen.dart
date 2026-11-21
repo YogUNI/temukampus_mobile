@@ -9,6 +9,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/components/sticker_button.dart';
+import '../../../../app/theme/components/ticket_clipper.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
@@ -67,6 +68,15 @@ class HomeScreen extends ConsumerWidget {
                     ref.invalidate(unreadNotificationsProvider);
                   },
                 ),
+                if (user != null && user.canScanTickets) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _PanitiaBanner(
+                    onTap: () {
+                      AppHaptics.selection();
+                      context.push(AppRoutes.panitia);
+                    },
+                  ),
+                ],
                 if (user == null) ...[
                   const SizedBox(height: AppSpacing.lg),
                   _GuestBanner(
@@ -280,6 +290,109 @@ class _SearchPill extends StatelessWidget {
               child: const Icon(Icons.tune_rounded, color: AppColors.ink, size: 18),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PanitiaBanner extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PanitiaBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: TicketContainer(
+        punchRadius: 10.0,
+        punchPositionPercent: 0.72,
+        borderRadius: 14.0,
+        borderColor: AppColors.ink,
+        borderWidth: 1.5,
+        color: AppColors.signalLight,
+        hasShadow: true,
+        shadowOffset: const Offset(3, 3),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.signal,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.ink, width: 1.2),
+                ),
+                child: const Icon(
+                  Icons.dashboard_customize_rounded,
+                  color: AppColors.ink,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'PANEL PANITIA AKTIF',
+                          style: AppTypography.badge.copyWith(
+                            color: AppColors.ink,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.signal,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Kelola Acara, Peserta & Presensi',
+                      style: AppTypography.titleSmall.copyWith(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.ink,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Buka',
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.paper,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 12,
+                      color: AppColors.paper,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

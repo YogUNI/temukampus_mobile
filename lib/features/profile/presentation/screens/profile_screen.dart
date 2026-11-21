@@ -809,11 +809,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Buka Scanner Presensi Hari-H',
+                                'Panel Kelola Acara & Panitia',
                                 style: AppTypography.titleSmall.copyWith(fontSize: 14),
                               ),
                               Text(
-                                'Pindai QR code tiket peserta di pintu gerbang',
+                                'Kelola acara, verifikasi peserta, presensi & tim ormawa',
                                 style: AppTypography.bodySmall.copyWith(fontSize: 11, color: AppColors.ink500),
                               ),
                             ],
